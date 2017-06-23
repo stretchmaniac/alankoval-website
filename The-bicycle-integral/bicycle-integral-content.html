@@ -1,0 +1,135 @@
+<div class='padding'>
+    <h1>The Bicycle Integral</h1>
+    A few posts ago I wrote about <a href='http://alankoval.com/Posts/The-bicycle-problem/bike-problem.html'>The Bicycle Problem</a>. 
+    Specifically, I found a differential equation that modeled the path for a bicycle being pulled along a line. This differential 
+    equation involved solving a certain integral. After a few weak tries at solving it, I gave up and asked Wolfram-Alpha:
+    <div class='different'>"I spent awhile trying to crack this one [integral], but considering what 
+    Wolfram-Alpha spit out, it would have take a lot longer than 'awhile'"</div>
+    That sounds like I gave up. Which, in a sense, is true.
+    <br>
+    <br>
+    However, I don't want to sound like I rely on Wolfram-Alpha to do my math for me, so I decided to 
+    conquer this unassuming indefinate integral myself: 
+    \[\int -\frac{\sqrt{a^2-x^2}}{x}\,\,dx\]
+    <div class='different-green'>Warning! Heavy use of calculus ahead!</div>
+    Here's the graph of \(-\frac{\sqrt{a^2-x^2}}{x}\), for reference:
+    <br>
+    <a title="View with the Desmos Graphing Calculator" href="https://www.desmos.com/calculator/toiawgz15b" 
+    style='margin-top:20px;margin-bottom:20px;display:block;position:relative;left:50%;transform:translateX(-50%);'>  
+    <img src="https://s3.amazonaws.com/calc_thumbs/production/toiawgz15b.png" 
+    style="border:1px solid #ccc; max-width:100%;position:relative;left:50%;transform:translateX(-50%);"/></a>
+    At first glance, a nice U-substitution looked promising, but the feeling only lasted for about 5 seconds: 
+    \[u=a^2-x^2 \qquad -\int \frac{\sqrt{u}}{-2x \cdot x}\,\,du\] 
+    Then I tried integrating by parts. If you don't recall, integrating by parts is about finding something 
+    in the function that you know the integral of, then using the product rule backward to work from there. 
+    For example, I know that the integral of \(\frac{1}{x}\) is \(\ln{x}\). Then I could set up an expression 
+    like this: 
+    \[-\ln{x}\cdot \sqrt{a^2-x^2}\]
+    If I took the derivative of this using the product rule, I would get
+    \[-\frac{d}{dx}(\ln{x})\cdot \sqrt{a^2-x^2} + -\frac{d}{dx}\left(\sqrt{a^2-x^2}\right)\cdot \ln{x}\]
+    \[-\frac{\sqrt{a^2-x^2}}{x} - \frac{-2x\cdot \ln{x}}{2\sqrt{a^2-x^2}}\]
+    And look at that! We get our original function. Unfortunately, we also get this other expression, 
+    \(\frac{2x\cdot \ln{x}}{2\sqrt{a^2-x^2}}\). To fix this, we need a new function with a derivative equal to 
+    \(-\frac{2x\cdot \ln{x}}{2\sqrt{a^2-x^2}}\) that, when added to the original function, would cancel 
+    out this term. And now we have a new integral to solve: 
+    \[\int -\frac{x\ln{x}}{\sqrt{a^2-x^2}}\,\,dx\]
+    So altogether, we have
+    \[\int -\frac{\sqrt{a^2-x^2}}{x}\,\,dx = -\ln{x}\sqrt{a^2-x^2} - \int \frac{x\ln{x}}{\sqrt{a^2-x^2}}\,\,dx\]
+    But... That doesn't help us very much. This integral actually looks worse than the old one! In case you 
+    are looking at this thinking that you know the integral to \(\frac{x}{\sqrt{a^2-x^2}}\), here's what happens 
+    when you integrate by parts again: 
+    \[\int -\frac{\sqrt{a^2-x^2}}{x}\,\,dx = -\ln{x}\sqrt{a^2-x^2} - \int \frac{x\ln{x}}{\sqrt{a^2-x^2}}\,\,dx\]
+    \[\int -\frac{\sqrt{a^2-x^2}}{x}\,\,dx = -\ln{x}\sqrt{a^2-x^2} - \left(-\sqrt{a^2-x^2}\ln{x} - \int -\frac{\sqrt{a^2-x^2}}{x}\,\,dx\right)\]
+    \[\int -\frac{\sqrt{a^2-x^2}}{x}\,\,dx = \int -\frac{\sqrt{a^2-x^2}}{x}\,\,dx\]
+    \[0=0\]
+    Did you see that coming? If you think about it, you basically just undid what your first integration-by-parts 
+    accomplished, so you are back where you started. 
+    <div style='margin-top:20px;margin-bottom:20px' class='shortline'></div>
+    So now what? At this point in the bicycle problem, after trying multiple other integration-by-parts attemps, 
+    I gave up and asked Wolfram-Alpha what the answer was. Not this time!
+    <br>
+    <br>
+    Remember when your pre-calculus teacher told you to always rationalize the denominator? 
+    <br>
+    <br>
+    The lesson would look something like this: 
+    \[\frac{\sqrt{x}}{\sqrt{y}} = \frac{\sqrt{x}\sqrt{y}}{\sqrt{y}\sqrt{y}} = \frac{\sqrt{xy}}{y}\]
+    Well, what if we un-rationalized the expression?
+    \[-\frac{\sqrt{a^2-x^2}}{x} = -\frac{\sqrt{a^2-x^2}\sqrt{a^2-x^2}}{x\sqrt{a^2-x^2}} = -\frac{a^2-x^2}{x\sqrt{a^2-x^2}}\]
+    Distributing the negative and dividing up the fraction: 
+    \[-\frac{a^2-x^2}{x\sqrt{a^2-x^2}}\] 
+    \[\frac{x^2}{x\sqrt{a^2-x^2}} - \frac{a^2}{x\sqrt{a^2-x^2}}\]
+    \[\frac{x}{\sqrt{a^2-x^2}} - \frac{a^2}{x\sqrt{a^2-x^2}}\] 
+    Now there's something we can work with! The whole first term is now the U-Substitution I was looking for at the beginning
+    (which I will leave as an excercise to the reader).
+    \[\int \frac{x}{\sqrt{a^2-x^2}} - \frac{a^2}{x\sqrt{a^2-x^2}} \,\, dx = -\sqrt{a^2-x^2} + C - a^2\int \frac{1}{x\sqrt{a^2-x^2}}\,\,dx\]
+    And so I stared at this new integral for a long time. And then...! Remember your Calculus I class, where you learned the 
+    derivatives for inverse trigonometric functions? Well, if you don't, there's one in particular that I thought of: 
+    \[\frac{d}{dx}\,\,\sec^{-1}{x} = \frac{1}{|x|\sqrt{x^2-1}}\]
+    There is a certain similarity between this and my integral. In fact, with U-substitution: 
+    \[u=\frac{x}{a} \qquad x=au \qquad \int \frac{1}{au\sqrt{a^2-a^2u^2}}a\,\,du\]
+    \[\int \frac{1}{au\sqrt{1-u^2}}\,\,du\]
+    \[\frac{1}{a} \int \frac{1}{u\sqrt{1-u^2}}\,\,du \]
+    There's just one more change that needs to be done: 
+    \[\frac{1}{a} \int \frac{1}{u\sqrt{-1\cdot(u^2-1)}}\,\,du \]
+    \[\frac{1}{a} \int \frac{1}{iu\sqrt{u^2-1}}\,\,du \]
+    \[\frac{1}{ia} \int \frac{1}{u\sqrt{u^2-1}}\,\,du \]
+    And voila! Now we can set up a piecewise function to deal with the absolute value in the \(\sec^{-1}(x)\) derivative.
+    \[\frac{1}{ia} \int \frac{1}{u\sqrt{u^2-1}}\,\,du = \begin{cases} \frac{1}{ia}\sec^{-1}{u} \quad \text{if }u &gt;= 0 \\
+    -\frac{1}{ia}\sec^{-1}{u} \quad \text{if }u &lt; 0 \end{cases}\]
+    For simplicity sake, I'm going to stick with only \(u&gt;=0\) for now. 
+    <br>
+    <br>
+    Technically, we're done. The final product is
+    \[\int -\frac{\sqrt{a^2-x^2}}{x}\,\,dx = -\sqrt{a^2-x^2} - a^2\left(\frac{1}{ia}\sec^{-1}{\left(\frac{x}{a}\right)}\right)+ C\]
+    \[\int -\frac{\sqrt{a^2-x^2}}{x}\,\,dx = -\sqrt{a^2-x^2} - \frac{a}{i}\sec^{-1}{\left(\frac{x}{a}\right)}+ C\]
+    However, we can't exactly type this expression into our favorite graphing program. We're going to have to get rid of that 
+    \(i\). This is where things get a little tricky. 
+    <div class='different'>
+        <h2>Transforming \(\sec^{-1}{\left(x\right)}\) into basic functions (involving \(i\))</h2>
+        Let's start with Euler's Formula: 
+        \[e^{ix}=\cos{x}+i\sin{x}\]
+        Rewriting in terms of cos: 
+        \[e^{ix}=\cos{x}+i\sqrt{1-\cos^2{x}}\]
+        Rewriting in terms of sec:
+        \[e^{ix}=\frac{1}{\sec{x}}+i\sqrt{1-\frac{1}{\sec^2{x}}}\]
+        Substituting \(\sec^{-1}{\left(x\right)}\) for x: 
+        \[e^{i\sec^{-1}{\left(x\right)}} = \frac{1}{x} + i\sqrt{1-\frac{1}{x^2}}\]
+        \[\sec^{-1}{\left(x\right)} = \frac{1}{i}\ln{\left( \frac{1}{x} + i\sqrt{1-\frac{1}{x^2}} \right)}\]
+        \[\sec^{-1}{\left(x\right)} = \frac{1}{i}\ln{\left( \frac{1}{x} + \sqrt{\frac{1}{x^2} - 1} \right)}\]
+        \[\sec^{-1}{\left(x\right)} = \frac{1}{i}\ln{\left( \frac{1}{x} + \frac{1}{x}\sqrt{1-x^2} \right)}\]
+        \[\sec^{-1}{\left(x\right)} = -i\left(\ln{\left( 1 + \sqrt{1-x^2} \right)} + \ln{\left(\frac{1}{x}\right)}\right)\]
+    </div>
+    And, substituting that into our previous equation: 
+    \[\int -\frac{\sqrt{a^2-x^2}}{x}\,\,dx = -\sqrt{a^2-x^2} - \frac{a}{i}\cdot-i\left(\ln{\left( 1 + \sqrt{1-\left(\frac{x}{a}\right)^2} \right)} + \ln{\left(\frac{1}{\frac{x}{a}}\right)}\right)+ C\]
+    \[\int -\frac{\sqrt{a^2-x^2}}{x}\,\,dx = -\sqrt{a^2-x^2} +a\left(\ln{\left( 1 + \sqrt{1-\left(\frac{x}{a}\right)^2} \right)} + \ln{\left(\frac{a}{x}\right)}\right)+ C\]
+    \[\int -\frac{\sqrt{a^2-x^2}}{x}\,\,dx = -\sqrt{a^2-x^2} +a\ln{\left( 1 + \sqrt{1-\left(\frac{x}{a}\right)^2} \right)} + a\ln{a} - a\ln{x}+ C\]
+    Because \(a\ln{a}\) is a constant, we'll just lump it in with \(C\): 
+    \[\int -\frac{\sqrt{a^2-x^2}}{x}\,\,dx = -\sqrt{a^2-x^2} +a\ln{\left( 1 + \sqrt{1-\left(\frac{x}{a}\right)^2} \right)} - a\ln{x}+ C\]
+    And there we go! It's finished! Now I feel better. I can do math.
+    <div class='shortline' style='margin-top:20px;margin-bottom:20px'></div>
+    <span style='font-size:10px'>Note: I neglected some domain issues throughout this whole process. While in that 
+    sense it isn't entirely rigorous, it all works out given that \(x>0\), which was true in the original bicycle problem. </span>
+</div>
+<div class='padding'>
+    <div id="disqus_thread"></div>
+    <script>
+    /**
+    * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+    * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+    */
+    var disqus_config = function () {
+        this.page.url = 'http://alankoval.com/Posts/The-bicycle-integral.html'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'http://alankoval.com/Posts/The-bicycle-integral.html'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+    (function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    
+    s.src = '//alankoval.disqus.com/embed.js';
+    
+    s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+</div>
