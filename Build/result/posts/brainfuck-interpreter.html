@@ -1,0 +1,128 @@
+<!DOCTYPE html><html lang="en-us"><head>
+	<meta name="dependencies" content="header-styles jquery">
+	<meta name="date" content="1/30/2017">
+	<meta name="tags" content="Javascript">
+	<meta name="url" content="brainfuck-interpreter.html">
+	<meta name="identifier" content="5ubGbkNheNmZJHRhnRrqqKPMkrC8Twx6a8ux3cqWUMBUHrHsHY">
+	<meta name="title" content="A JS Brainfuck Interpreter">
+	<meta name="description" content="Brainfuck. A classic useless programming language">
+	<meta name="thumbnail" content="">
+	<link href="5ubGbkNheNmZJHRhnRrqqKPMkrC8Twx6a8ux3cqWUMBUHrHsHY/brainfuck.css" rel="stylesheet">
+<link rel="stylesheet" type="text/css" href="http://alankoval.com/header-styles.css"><script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script></head>
+<body>	
+	<div id="container">
+		<div class="heading">
+			<div id="header-name">
+				<a href="http://alankoval.com" id="name">Alan Koval</a>
+			</div>
+			<div id="header-rest">
+				<a href="http://alankoval.com/3dgrapher/" id="header-grapher" class="header-item">3D Grapher</a>
+				<a href="http://alankoval.com/blog.html" id="header-blog" class="header-item">Blog</a>
+				<a href="http://alankoval.com" id="header-about" class="header-item">About</a>
+			</div>
+		</div>
+		<div class="content">
+			<div class="content-posts">
+	 <div style="padding:25px; width:calc(100% - 50px)">
+		<span style="font-size:9px">1/30/2017 &gt; Javascript</span>
+		<h1>JS Brainfuck Interpreter</h1>
+		<p>
+			Brainfuck, if you didn't know, is an aptly named 
+			<a href="https://en.wikipedia.org/wiki/Esoteric_programming_language">esoteric</a>
+			programming language.
+		</p>
+		<p>
+			They say it messes with your mind because there's only a couple 
+			characters you can use to make your program: 
+			<code style="padding:3px;background-color:rgba(0,0,0,.1)">[],.&lt;&gt;+-</code>
+		</p>
+		<p>
+			In a nutshell, the "memory" consists of an infinite array of integers 
+			(each ranging from 0-255). There is a "pointer" which resides somewhere 
+			along this memory strip. "<code>&gt;</code>" moves the pointer one to the right 
+			while "<code>&lt;</code>" moves the pointer one to the left. You can 
+			increment and decrement the integer currently at the pointer with 
+			"<code>+</code>" and "<code>-</code>". "<code>[</code>" and "<code>]</code>" 
+			is a looping mechinism, "<code>.</code>" prints the ascii value of 
+			the integer currently at the pointer, and "<code>,</code>" prompts 
+			for input.
+		</p>
+		<p>
+			In other words, loads of fun! Check it out: 
+		</p>
+		<div onload="onload()">
+			<div id="content">
+				<div id="title">Brainfuck Interpreter</div>
+				<div id="commands">
+					<code>&gt;</code> &nbsp; move pointer right<br>
+					<code>&lt;</code> &nbsp; move pointer left<br>
+					<code>[</code>  &nbsp; jump past matching bracket if value at pointer is zero<br>
+					<code>]</code>  &nbsp; jump to matching bracket if value at pointer is nonzero<br>
+					<code>+</code>  &nbsp; increase value at pointer by 1<br>
+					<code>-</code>  &nbsp; decrease value at pointer by 1<br>
+					<code>.</code>  &nbsp; print value at pointer as character<br>
+					<code>,</code>  &nbsp; take input and store at pointer location<br>
+				</div>
+				<div id="code-area">
+					<code contenteditable="true" id="code">-[.-]</code>
+					<span id="steps">Steps:</span>
+					<div id="buttons">
+						<button id="restart-button">↻</button>
+						<div id="step-forward-button"></div>
+						<div id="run-button"></div>
+						<div class="gone" id="pause-button"></div>
+						<div id="step-back-button"></div>
+					</div>
+				</div>
+				<br>
+				<div id="speed-scale">
+					<span id="speed-scale-label">Speed:</span> 
+					<input type="range" id="speed-scale-input">
+				</div>
+				<br>
+				<div id="output-area">
+					<span style="margin:10px">Output</span>
+					<br>
+					<div id="output"></div>
+					<div class="hidden" id="before-not-empty"></div>
+					<div class="hidden" id="not-empty">Just so you know... it's not empty. 
+						Many of the first ASCII chars are invisible.</div>
+				</div>
+			</div>
+			<script type="text/javascript" src="5ubGbkNheNmZJHRhnRrqqKPMkrC8Twx6a8ux3cqWUMBUHrHsHY/brainf.js"></script>
+		</div>
+	</div>
+
+</div>
+			<div class="comments">
+			<div class="padding">
+		<div id="disqus_thread"></div>
+		<script>
+		var disqus_config = function () {
+			this.page.url = 'http://alankoval.com/posts/brainfuck-interpreter.html';
+			this.page.identifier = '5ubGbkNheNmZJHRhnRrqqKPMkrC8Twx6a8ux3cqWUMBUHrHsHY';
+		};
+		(function() {
+		var d = document, s = d.createElement('script');
+		
+		s.src = '//alankoval.disqus.com/embed.js';
+		
+		s.setAttribute('data-timestamp', +new Date());
+			(d.head || d.body).appendChild(s);
+		})();
+		</script>
+		<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div></div>
+		</div>
+		<div class="footer">
+			<div class="footer-image-container">
+				<img class="footer-line-image" src="http://alankoval.com/lizard.png">
+			</div>
+			<div class="footer-line-words">
+				<div class="footer-line-title">Hey!</div>
+				<div class="footer-line-description">I'm Alan, a high school senior in the Chicagoland area. 
+				If you are a college, I could use some scholarship money!</div>
+			</div>
+		</div>
+	</div>
+</body></html>

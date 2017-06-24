@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+	<meta name='dependencies' content='mathjax header-styles'>
+	<meta name='date' content='6/12/2016'>
+	<meta name='tags' content='Math'>
+	<meta name='url' content='bike-problem.html'>
+	<meta name='description' content='A bicycle rolls into a bar, sees a differential equation and orders a pretty graph'>
+	<meta name='thumbnail' content='http://alankoval.com/Posts/The-bicycle-problem/problem-sketch.png'>
+	<meta name='title' content='The Bicycle Problem'>
+	<meta name='identifier' content='bkqmzc5rHLZX7wQJmp4Bjm2p8g9nXTqju7tS2mRMARFfMU2QWx'>
+</head>
+<body>
+	<div style='padding:15px; width:calc(100% - 30px)'>
+		<span style='font-size:9px'>6/12/2016 > Math</span>
+		<h1>The Bicycle Problem</h1>
+		
+		<div class='different'>
+			You're on a bicycle. You are going diagonally across a road. When you cross the middle of the road, 
+			you suddenly turn your front wheel so that it travels on the yellow midline. What is the path 
+			of your back wheel?
+		</div>
+		
+		My friend brought this problem up before physics one day. He was very excited. He mentioned tensors,
+		to which I, having no experience with the subject, merely waited patiently. Luckily, the solution to this problem requires
+		no tensors at all.
+		
+		<figure>
+			<img src='http://i.imgur.com/p8rjz44.png'>
+			<figcaption>A crude drawing of the problem. The bicycle starts in the configuration on the left and 
+			smoothly transitions to the configuration on the right. </figcaption>
+		</figure>
+		
+		<br>
+		<br>
+		<div class='shortline'></div>
+		
+		<h2>The Solution</h2>
+		When I actually got to looking at this problem, a few things were pretty clear:
+		<ol>
+			<li>The distance from the back wheel to the front wheel is constant. Bicycles don't stretch.</li>
+			<li>The back wheel is pulled toward the front wheel at all times. The force on the back wheel is 
+			provided by the frame, which is in the direction of the front wheel.</li>
+		</ol>
+		
+		To make things simpler, I assumed that the front wheel was rolling along the \(x\) axis toward positive infinity. 
+		Let's call the \(x\) value of the front wheel \(f_x\).
+		<br>
+		<br>
+		Similarly, let's call the position of the back wheel \((b_x,b_y)\) (since its \(y\) value is not constant).
+		<br>
+		<br>
+		To quantify the above observations (\(L\) is the length of the bicycle and \(A\) and \(B\) are constants):
+		\[(f_x-b_x)^2+b_y^2=L^2\]
+		\[\frac{db_y}{db_x}=\frac{-b_y}{f_x-b_x}\]
+		The second equation is a little harder to grasp than the first. However, all that it is saying is that the direction
+		of the tangent line is toward the front wheel. Really it is about similar triangles, with \(-b_y\) being the height 
+		and \(f_x-b_x\) being the width of one triangle as opposed to \(db_y\) and \(db_x\) for the "differential triangle"
+		that is the slope.
+		<br>
+		<br>
+		Now solve for \(f_x\) in the first equation (I omitted the negative solution because I assume that \(f_x\) is positive)
+		\[f_x=\sqrt{L^2-b_y^2}+b_x\]
+		Plug it in to the second equation:
+		\[\frac{db_y}{db_x}=\frac{-b_y}{\sqrt{L^2-b_y^2}+b_x-b_x}=\frac{-b_y}{\sqrt{L^2-b_y^2}}\]
+		Happily, the \(b_x\) cancels. This isn't just a coincidence: the direction of the back wheel 
+		should be independant from its arbitrary location on the \(x\) axis.
+		<br>
+		<br>
+		And now we have a neat differential equation. We can solve this with separation of variables.
+		\[\int-\frac{\sqrt{L^2-b_y^2}}{b_y}\,\,\,db_y=\int db_x\]
+		Now that is a lovely integral! I spent awhile trying to crack this one, but considering what Wolfram-Alpha 
+		spit out, it would have take a lot longer than "awhile" (I actually felt guilty for asking the internet, 
+		so <a href='http://alankoval.com/Posts/The-bicycle-integral/bicycle-integral.html'>I did it myself</a>):
+		\[-\sqrt{L^2-b_y^2}+L\log{(L\sqrt{L^2-b_y^2}+L^2)}-L\log{(b_y)}+C=b_x\]
+		Note that I combined the "C"s from both indefinate integrals into the one on the left side.
+		<br>
+		<br>
+		Now we can setup some initial conditions. At the start, if we assume that the back wheel starts on the \(y\)
+		axis, the back wheel is at \((0,b_{yi})\) Solving for C:
+		\[C=\sqrt{L^2-b_{yi}^2}-L\log{(L\sqrt{L^2-b_{yi}^2}+L^2)}+L\log{(b_{yi})}\]
+		I made myself a Desmos graph of the situation. Feel free to play around with it. The red line is the path of the 
+		back wheel. The black line is the frame of the bicycle.
+		<iframe style='margin-top:10px;margin-bottom:10px' width='100%' height='500px' src='https://www.desmos.com/calculator/m05jnxjvvw'></iframe>
+		<script>window.frames[0].alert=function(){};</script>
+		<h2>Epilogue</h2>
+		This got me thinking. I assumed, early on in the problem, that the direction of motion was always in the direction 
+		of the applied force. Technically, the back wheel should have some sort of inertia that keeps it moving in the 
+		same direction. Thus the acceleration should have been in the direction of the applied force, per Newton's 2nd law.
+		However, any effects of inertia are quickly brought to a halt by friction. 
+		<br>
+		<br>
+		I actually tested this today. I was going for a bike ride and I thought to see if my solution looked remotely
+		correct before I started. It looked pretty good: the back wheel never passed the centerline, leading me to believe that my 
+		implicit assumption about friction was correct.
+		<br>
+		<br>
+		Interestingly, it seems impossible to compute the resulting path with acceleration. Because the velocity cannot 
+		change instantaneously, the length of the bicycle cannot remain constant, hence breaking my equation. It's a little 
+		bit of a shame, but I guess I'll be happy with my current solution.
+	</div>
+</body>
+</html>

@@ -1,5 +1,29 @@
-<div style='padding:25px; width:calc(100% - 50px)'>
-    <span style='font-size:9px'>1/21/2017 > Javascript</span>
+<!DOCTYPE html><html lang="en-us"><head>
+    <meta name="dependencies" content="mathjax header-styles prism jquery">
+	<meta name="date" content="1/21/2017">
+	<meta name="tags" content="Javascript Physics">
+	<meta name="url" content="rigid-body-simulator.html">
+	<meta name="thumbnail" content="http://i.imgur.com/oK70MKN.png">
+	<meta name="description" content="Did I learn anything in Physics?">
+	<meta name="title" content="My Rigid Body Simulator">
+	<meta name="identifier" content="gtwQv4rFUYQqpKLbWN56xnX8c4XW578SZ8mBuWmwSdxPpYXDVf">
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?..."></script><script type="text/javascript" src="http://alankoval.com/prism/prism.js"></script><link rel="stylesheet" type="text/css" href="http://alankoval.com/header-styles.css"><script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script></head>
+<body>	
+	<div id="container">
+		<div class="heading">
+			<div id="header-name">
+				<a href="http://alankoval.com" id="name">Alan Koval</a>
+			</div>
+			<div id="header-rest">
+				<a href="http://alankoval.com/3dgrapher/" id="header-grapher" class="header-item">3D Grapher</a>
+				<a href="http://alankoval.com/blog.html" id="header-blog" class="header-item">Blog</a>
+				<a href="http://alankoval.com" id="header-about" class="header-item">About</a>
+			</div>
+		</div>
+		<div class="content">
+			<div class="content-posts">
+<div style="padding:25px; width:calc(100% - 50px)">
+    <span style="font-size:9px">1/21/2017 &gt; Javascript, Physics</span>
     <h1>My Rigid Body Simulator</h1>
     <p>
         As you may know, last year I completed AP Physics I and II. But that doesn't really mean much.
@@ -11,17 +35,16 @@
     </p>
     <h2>The Objects</h2>
     <figure>
-        <img src='http://i.imgur.com/A3U4S2C.png'>
-        <img src='http://i.imgur.com/oK70MKN.png'>
-        <img src='http://i.imgur.com/NbdVzmG.png'>
+        <img src="http://i.imgur.com/A3U4S2C.png">
+        <img src="http://i.imgur.com/oK70MKN.png">
+        <img src="http://i.imgur.com/NbdVzmG.png">
     </figure>
     <p>
         Each object is a collection of points connected by massless beams. The size of the dot is
         indicative of the mass of each point. Each object is assigned a velocity 
         and angular velocity:
     </p>
-    <pre class='language-javascript'>
-<code>function createObject(points, velocity, angularVelocity, flags){
+    <pre class="language-javascript"><code>function createObject(points, velocity, angularVelocity, flags){
     var object = {
         points:points,
         velocity:velocity,
@@ -32,7 +55,7 @@
     setCenterOfMass(object);
     setMomentofInertia(object, object.centerOfMass);
 
-    object.fixed = (flags !== undefined && flags.indexOf('fixed') !== -1);
+    object.fixed = (flags !== undefined &amp;&amp; flags.indexOf('fixed') !== -1);
     objects.push(object);
     return object;
 }
@@ -45,13 +68,12 @@ createObject([
     ], {x: 0, y: 0}, 0, 'fixed');</code>
     </pre>
     <p>
-        This snippet creates a block with arbitrarily large mass – used as a border.
+        This snippet creates a block with arbitrarily large mass â€“ used as a border.
     </p>
     <p>Finding the center of mass and moment of inertia is easy enough if we treat an object 
     as a collection of point masses:</p>
     \[C_{mass}=\frac{1}{mass} \sum \vec{p} \qquad I=\sum m_{\vec{p}} \,r^2=\sum m_{\vec{p}}\,||\vec{p}-C_{mass}||^2\]
-    <pre class='language-javascript'>
-<code>//center of mass = weighted average of points
+    <pre class="language-javascript"><code>//center of mass = weighted average of points
 function setCenterOfMass(object){
     var sumX = 0, sumY = 0;
     for(var p = 0; p &lt; object.points.length; p++){
@@ -79,9 +101,9 @@ function setMomentofInertia(object, axisOfRotation){
     </p>
     <p>
         Why is the center of mass the axis of rotation? Take a look: 
-        <div style='display:flex;width:100%;flex-wrap:wrap;margin:10px 0px 10px 0px'>
-            <img src='http://i.imgur.com/85ifvoV.png'>
-            <div sytle='padding:25px'>Each point, in order to continue in a circular path 
+        </p><div style="display:flex;width:100%;flex-wrap:wrap;margin:10px 0px 10px 0px">
+            <img src="http://i.imgur.com/85ifvoV.png">
+            <div sytle="padding:25px">Each point, in order to continue in a circular path 
             around its axis, must experience a force toward that axis with a magnitude 
             \(F=\frac{mv^2}{r}\). If the object spins with with angular velocity \(\omega\), 
             then \(F=\frac{m (\omega r)^2}{r}=mr \omega^2\). In vector form: 
@@ -96,16 +118,15 @@ function setMomentofInertia(object, axisOfRotation){
             of the center of mass. 
             </div>
         </div>
-    </p>
+    <p></p>
     <p>
         Cool! So now we have some rotating and moving objects:
     </p>
     <div>
-        <canvas id='rigid-canvas1' width='400px' height='300px' 
-            style='border:.5px solid rgba(0,0,0,.1)'></canvas>
+        <canvas id="rigid-canvas1" width="400px" height="300px" style="border:.5px solid rgba(0,0,0,.1)"></canvas>
         <br>
-        <button class='style-button' onclick='canvas1ButtonClicked()'>New Object</button>
-        <span id='rigid-canvas1-fps'></span>
+        <button class="style-button" onclick="canvas1ButtonClicked()">New Object</button>
+        <span id="rigid-canvas1-fps"></span>
     </div>
     <h2>Forces</h2>
     <p>
@@ -114,7 +135,7 @@ function setMomentofInertia(object, axisOfRotation){
         \[F=ma\]
         It is easy to merely say this, but in practice, in the discrete world of 
         computers, it is a little more difficult. Even with 
-        <a href='http://creativejs.com/resources/requestanimationframe/'>
+        <a href="http://creativejs.com/resources/requestanimationframe/">
             window.requestAnimationFrame()</a>,
             the time between frames is not garunteed.
     </p>
@@ -126,8 +147,7 @@ function setMomentofInertia(object, axisOfRotation){
         \(\Delta \theta=\frac{d\,\omega}{d\,t}t=\omega t\).
         
     </p>
-    <pre class='language-javascript'>
-<code>var gravitationalField = {x: 0, y: 1000};
+    <pre class="language-javascript"><code>var gravitationalField = {x: 0, y: 1000};
 function computeForces(object, dt){
     var netForce = {x:0,y:0};
     netForce = add(netForce,scalar(object.mass, gravitationalField));
@@ -143,18 +163,17 @@ function computeForces(object, dt){
         though: 
     </p>
     <div>
-        <canvas id='rigid-canvas2' width='400px' height='300px' 
-            style='border:.5px solid rgba(0,0,0,.1)'></canvas>
+        <canvas id="rigid-canvas2" width="400px" height="300px" style="border:.5px solid rgba(0,0,0,.1)"></canvas>
         <br>
-        <button class='style-button' onclick='canvas2ButtonClicked()'>New Object</button>
-        <button class='style-button' onclick='randomGravity()'>Randomize Gravity</button>
-        <span id='rigid-canvas2-fps'></span>
+        <button class="style-button" onclick="canvas2ButtonClicked()">New Object</button>
+        <button class="style-button" onclick="randomGravity()">Randomize Gravity</button>
+        <span id="rigid-canvas2-fps"></span>
     </div>
     <h2>Collisions</h2>
     <p>
         Collisions were a little difficult. So difficult that I am not ashamed to say 
         that I consulted Chris Hecker's awesome 
-        <a href='http://chrishecker.com/Rigid_body_dynamics'>article</a> for guidance. 
+        <a href="http://chrishecker.com/Rigid_body_dynamics">article</a> for guidance. 
     </p>
     <p>
         But there were many other challenges besides collision response. How do you identify 
@@ -164,10 +183,10 @@ function computeForces(object, dt){
     </p>
     <p>
         My process for detecting collisions went like this: 
-        <ol>
+        </p><ol>
             <li>For every pair of objects, determine if any point lies inside the other 
             object. I used the magical algorithm found 
-            <a href='http://pnpoly.blogspot.com/'>
+            <a href="http://pnpoly.blogspot.com/">
                 here</a>.</li>
             <li>If any points intersected, find the two line segments which intersect 
             between the two objects.</li>
@@ -178,11 +197,11 @@ function computeForces(object, dt){
             to find the amount that the object has been displaced.</li>
             <li>Feed this information into Chris Hecker's formula.</li>
         </ol>
-    </p>
+    <p></p>
     <div>
-        <img src='http://i.imgur.com/4t2sz1n.png'>
+        <img src="http://i.imgur.com/4t2sz1n.png">
         <br>
-        <span style='font-size:12px'>The orange lines are all intersecting lines, the red point 
+        <span style="font-size:12px">The orange lines are all intersecting lines, the red point 
         the intersecting point and the green point the collision point (assuming that the 
         objects had not already passed through each other).</span>
     </div>
@@ -197,8 +216,7 @@ function computeForces(object, dt){
         vector is projected onto a vector perpendicular to the vector from the center of mass to the 
         collision: 
     </p>
-    <pre class='language-javascript'>
-<code>//moves each object according to its linear/angular velocity
+    <pre class="language-javascript"><code>//moves each object according to its linear/angular velocity
 function moveObjects(timeStep){
     for(var p = 0; p &lt; objects.length; p++){
         var object = objects[p];
@@ -224,39 +242,50 @@ function moveObjects(timeStep){
         So there you have it. My own, homegrown rigid body simulation. Here's the completed 
         (for now) project: 
     </p>
-    <div style='max-width:calc(100% - 50px);overflow-x:auto'>
-        <canvas id='rigid-canvas3' width='800px' height='800px' 
-            style='border:.5px solid rgba(0,0,0,.1)'></canvas>
+    <div style="max-width:calc(100% - 50px);overflow-x:auto">
+        <canvas id="rigid-canvas3" width="800px" height="800px" style="border:.5px solid rgba(0,0,0,.1)"></canvas>
         <br>
-        <button class='style-button' onclick='canvas3ButtonClicked()'>New Object</button>
-        <button class='style-button' onclick='randomGravity()'>Randomize Gravity</button>
-        <span id='rigid-canvas3-fps'></span>
+        <button class="style-button" onclick="canvas3ButtonClicked()">New Object</button>
+        <button class="style-button" onclick="randomGravity()">Randomize Gravity</button>
+        <span id="rigid-canvas3-fps"></span>
     </div>
     <p>
         It definately has some major glitches. I think some predictive collision 
         algorithms may be in order, but that it for another time.
     </p>
 </div>
-<script>Prism.highlightAll()</script>
-<div class='padding'>
-    <div id="disqus_thread"></div>
-    <script>
-    /**
-    * RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
-    * LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
-    */
-    var disqus_config = function () {
-        this.page.url = 'http://alankoval.com/Posts/Rigid-body-simulator/rigid-body.html'; // Replace PAGE_URL with your page's canonical URL variable
-        this.page.identifier = 'http://alankoval.com/Posts/Rigid-body-simulator/rigid-body.html'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-    };
-    (function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    
-    s.src = '//alankoval.disqus.com/embed.js';
-    
-    s.setAttribute('data-timestamp', +new Date());
-        (d.head || d.body).appendChild(s);
-    })();
-    </script>
-    <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+
+<script type="text/javascript" src="gtwQv4rFUYQqpKLbWN56xnX8c4XW578SZ8mBuWmwSdxPpYXDVf/rigid-body-physics.js"></script>
 </div>
+			<div class="comments">
+			<div class="padding">
+		<div id="disqus_thread"></div>
+		<script>
+		var disqus_config = function () {
+			this.page.url = 'http://alankoval.com/posts/rigid-body-simulator.html';
+			this.page.identifier = 'gtwQv4rFUYQqpKLbWN56xnX8c4XW578SZ8mBuWmwSdxPpYXDVf';
+		};
+		(function() {
+		var d = document, s = d.createElement('script');
+		
+		s.src = '//alankoval.disqus.com/embed.js';
+		
+		s.setAttribute('data-timestamp', +new Date());
+			(d.head || d.body).appendChild(s);
+		})();
+		</script>
+		<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div></div>
+		</div>
+		<div class="footer">
+			<div class="footer-image-container">
+				<img class="footer-line-image" src="http://alankoval.com/lizard.png">
+			</div>
+			<div class="footer-line-words">
+				<div class="footer-line-title">Hey!</div>
+				<div class="footer-line-description">I'm Alan, a high school senior in the Chicagoland area. 
+				If you are a college, I could use some scholarship money!</div>
+			</div>
+		</div>
+	</div>
+</body><script type="text/javascript">MathJax.Hub.Queue(["Typeset",MathJax.Hub])</script><script type="text/javascript">Prism.highlightAll()</script></html>
