@@ -9,11 +9,14 @@
 //  blog.html
 //  header-styles.css
 //  prism (folder)
+//  3dgrapher
+//      index.html
+//      ...dependencies
 //	posts
 //		post1.html
-//		post1.js
 //		post2.html
-//		post2.js  
+//      AeAsGgtHhSg... (folder containing dependencies for post1)
+//      YuirtWtuerQ... (folder containing dependencies for post2)
 
 // for running command line args
 const exec = require('child_process').execSync;
@@ -22,22 +25,39 @@ const {JSDOM} = require('jsdom');
 // for saving files
 const files = require('fs');
 
+const git = '"C:\\Program Files\\Git\\bin\\git.exe"';
+//get the latest version of the website from github
+//exec(`${git} pull origin master`);
+
 // Remove result directory, then add it back (remove all the files)
 // /s is for removing all sub-elements, /q is for quiet (no confirmation)
-exec('rmdir /s /q result');
+if(files.existsSync('result')){
+	exec('rmdir /s /q result');
+}
 exec('mkdir result');
 
 // about page (we'll proceed in order)
 buildPage('../About/about.html', 'result/about.html', false);
 
+// projects page
+buildPage('../Projects/projects.html', 'result/projects.html', false);
+
 // we'll build the blog page later, before editing
 
-// no changes necessary to css files or libraries
-copy('../Boiler Plate', 'header-styles.css', 'result', 'header-styles.css');
-// prism folder 
-exec('mkdir "result\\prism"');
-copy('../Boiler Plate/prism', 'prism.js', 'result/prism', 'prism.js');
-copy('../Boiler Plate/prism', 'prism.css', 'result/prism', 'prism.css');
+// copy over all the files in Boiler Plate 
+for(const name of files.readdirSync('../Boiler Plate')){
+	// we specifically don't need homepage-template.html
+	if(name === 'homepage-template.html'){
+		continue;
+	}
+	
+	// if the child is a directory, use xcopy
+	if(files.statSync(`../Boiler Plate/${name}`).isDirectory()){
+		exec(`echo d | xcopy /q /r /y "../Boiler Plate/${name}" "result/${name}"`);
+	}else{
+		copy('../Boiler Plate', name, 'result', name);
+	}
+}
 
 // create posts directory 
 exec('mkdir "result/posts"');
@@ -179,15 +199,6 @@ function buildPage(contentPath, newPath, postData, onFinish = ()=>{}){
 				headerDoc.body.parentNode.insertBefore(newEl2, pageDoc.body.nextSibling);
 			}
 			
-			if(dependenciesString.includes('header-styles')){
-				const newEl = pageDoc.createElement('link');
-				newEl.rel = 'stylesheet';
-				newEl.type = 'text/css';
-				newEl.href = 'http://alankoval.com/header-styles.css';
-				
-				pageDoc.head.appendChild(newEl);
-			}
-			
 			if(dependenciesString.includes('jquery')){
 				const newEl = newScriptElement();
 				newEl.src = 'https://code.jquery.com/jquery-3.2.1.min.js';
@@ -208,7 +219,9 @@ function buildPage(contentPath, newPath, postData, onFinish = ()=>{}){
 			}
 			
 			// transfer the head of pageDom to the head of template file
-			headerDoc.head.innerHTML = pageDoc.head.innerHTML;
+			for(const child of pageDoc.head.childNodes){
+				headerDoc.head.appendChild = child;
+			}
 			
 			// transfer the body of pageDom to the content div in the template file
 			headerDoc.getElementsByClassName('content-posts')[0].innerHTML = pageDoc.body.innerHTML;

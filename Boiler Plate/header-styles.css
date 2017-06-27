@@ -1,12 +1,15 @@
 body{
     margin:0px;
     width:100%;
-    font-size:15px;
-    font-family: Verdana, Geneva, sans-serif;
+    font-size:20px;
+    font-family: 'Jaldi', sans-serif;
+	line-height: 125%;
+	background-color:rgba(0,0,0,.05);
 }
 .heading{
     box-shadow: 0px 0px 5px rgba(0,0,0,.25);
     display:flex;
+	background-color:white;
 }
 
 #header-name{
@@ -41,18 +44,43 @@ body{
 #header-about{
     margin-left:35px;
 }
-
+.content-wrapper{
+	display:flex;
+	flex-direction:row;
+}
 .content{
     width:50%;
-    margin-left:20%;
+	margin-top:15px;
+	margin-left:15%;
+	background-color:white;
+	padding-left:80px;
+	padding-top:40px;
+	padding-right:80px;
+	line-height:155%;
+}
+.side-bar{
+	width:12%;
+	height:0%;
+	margin-left:60px;
+	margin-right:60px;
     margin-top:15px;
-    box-shadow:0px 0px 5px rgba(0,0,0,.2);
+	background-color:white;
+	padding:40px;
+}
+#side-bar-image{
+	width:60%;
+	margin-left:20%;
+}
+#side-bar-description{
+	margin-top: 15px;
+	font-size:15px;
+	text-align:center;
 }
 .footer{
     width:calc(100%-40px);
     padding:20px;
     display:flex;
-    background-color:rgba(0,0,0,.1);
+    background-color:rgba(0,0,0,.05);
     justify-content:center;
 }
 
@@ -170,4 +198,8 @@ li{
 }
 .style-button:active{
     background-color:rgb(100,100,100);
+}
+.center{
+	margin-left:50%;
+	transform:translateX(-50%);
 }
