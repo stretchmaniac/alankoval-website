@@ -172,19 +172,10 @@ function buildPage(contentPath, newPath, postData, onFinish = ()=>{}){
 			
 			if(dependenciesString.includes('mathjax')){
 				const newEl = newScriptElement();
-				newEl.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?...';
+				newEl.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML';
 				
 				pageDoc.head.appendChild(newEl);
-				
-				// mathjax needs to render when its done, so we need to append something to the bottom
-				// of the page as well
-				const newEl2 = newScriptElement();
-				newEl2.innerHTML = 'MathJax.Hub.Queue(["Typeset",MathJax.Hub])';
-				
-				// insert it immediately after the body element
-				headerDoc.body.parentNode.insertBefore(newEl2, pageDoc.body.nextSibling);
 			}
-			
 			if(dependenciesString.includes('prism')){
 				const newEl = newScriptElement();
 				newEl.src = 'http://alankoval.com/prism/prism.js';
@@ -219,8 +210,9 @@ function buildPage(contentPath, newPath, postData, onFinish = ()=>{}){
 			}
 			
 			// transfer the head of pageDom to the head of template file
-			for(const child of pageDoc.head.childNodes){
-				headerDoc.head.appendChild = child;
+			// without the spread operator, childNodes is a non-iterable
+			for(const child of [...pageDoc.head.childNodes]){
+				headerDoc.head.appendChild(child);
 			}
 			
 			// transfer the body of pageDom to the content div in the template file
@@ -239,12 +231,6 @@ function buildPage(contentPath, newPath, postData, onFinish = ()=>{}){
 			onFinish();
 		});
 	});
-}
-
-// specifically builds a post html page, including discus commenting and 
-// necessary headers. Automatically includes other files in the folder
-function buildPost(postFolder, newDir){
-	
 }
 
 // copies a file from the old path (oldDir\oldName) to newPath (newDir\newName)
