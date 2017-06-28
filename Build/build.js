@@ -18,6 +18,8 @@
 //      AeAsGgtHhSg... (folder containing dependencies for post1)
 //      YuirtWtuerQ... (folder containing dependencies for post2)
 
+// set this to false to build the official version, versus for testing purposes
+const developing = true;
 // for running command line args
 const exec = require('child_process').execSync;
 // for manipulating HTML as a DOM
@@ -66,6 +68,8 @@ exec('mkdir "result/posts"');
 const postFolders = files.readdirSync('../Blog/Posts')
 	.filter(x => files.statSync('../Blog/Posts/'+x).isDirectory());
 	
+const numPosts = postFolders.length;
+	
 // we'll sort the posts by date in a bit
 const posts = [];
 for(const folder of postFolders){
@@ -75,7 +79,7 @@ for(const folder of postFolders){
 	JSDOM.fromFile(postUrl).then(postDom => {
 		//check for metadata
 		const metaEls = postDom.window.document.getElementsByTagName('meta');
-		const postData = {url: postUrl};
+		const postData = {};
 		for(const el of metaEls){
 			if(el.name && el.content){
 				postData[el.name] = el.content;
@@ -109,7 +113,7 @@ for(const folder of postFolders){
 		posts.push(postData);
 		
 		// if this is the last promise, and we are ready to move along
-		if(posts.length === 1){
+		if(posts.length === numPosts){
 			// we need to build the blog post first, so that it is ready to be ammended by the post data
 			buildPage('../Blog/blog.html', 'result/blog.html', false, () => {onPostDataFinish();} );
 		}
@@ -128,6 +132,10 @@ function onPostDataFinish(){
 		for(const post of posts){
 			// build blog.html item
 			postDiv.appendChild(constructPostLine(post, blogDoc));
+		}
+		
+		if(developing){
+			replaceLinksForDevelopement(blogDoc);
 		}
 		
 		// save result 
@@ -164,7 +172,7 @@ function buildPage(contentPath, newPath, postData, onFinish = ()=>{}){
 				throw new Error('dependencies attribute not defined in <meta> tag');
 			}
 			
-			const newScriptElement = () => {
+			function newScriptElement(){
 				const newEl = pageDoc.createElement('script');
 				newEl.type = 'text/javascript';
 				return newEl;
@@ -221,6 +229,11 @@ function buildPage(contentPath, newPath, postData, onFinish = ()=>{}){
 			// create target file
 			exec(`echo "" > ${newPath}`);
 			
+			// FOR DEVELOPEMENT ONLY
+			if(developing){
+				replaceLinksForDevelopement(headerDoc);
+			}
+			
 			// save serialized new document to the target file
 			files.writeFile(newPath, headerDom.serialize(), err => {
 				if(err){
@@ -231,6 +244,26 @@ function buildPage(contentPath, newPath, postData, onFinish = ()=>{}){
 			onFinish();
 		});
 	});
+}
+
+function replaceLinksForDevelopement(doc){
+	// replace http://alankoval.com/ with C:/.../ in all a, script and link tags
+	elements = [];
+	for(const tag of ['a', 'script', 'link']){
+		elements = elements.concat([...doc.getElementsByTagName(tag)]);
+	}
+	
+	for(const el of elements){
+		for(const attr of ['href','src']){
+			// setting the href automatically reduces folder/file to the full path. In development, 
+			// this means that it is assigned the full path it is in, which is not what we're looking for.
+			// however, if we are changing it, it is a full path so no harm done
+			if(el[attr] && el[attr].match(/http:\/\/alankoval\.com/g)){
+				el[attr] = el[attr].replace(/http:\/\/alankoval\.com/g,
+					`C:/Users/Stretch/Alan's Stuff/Coding/alankoval.com/alankoval-website/Build/result`);
+			}
+		}
+	}
 }
 
 // copies a file from the old path (oldDir\oldName) to newPath (newDir\newName)
