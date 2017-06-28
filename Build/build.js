@@ -190,6 +190,13 @@ function buildPage(contentPath, newPath, postData, onFinish = ()=>{}){
 				
 				pageDoc.head.appendChild(newEl);
 				
+				// also need the .css file 
+				const newStyleEl = pageDoc.createElement('link');
+				newStyleEl.href = 'http://alankoval.com/prism/prism.css';
+				newStyleEl.rel = 'stylesheet';
+				
+				pageDoc.head.appendChild(newStyleEl);
+				
 				// prism needs to render too
 				const newEl2 = newScriptElement();
 				newEl2.innerHTML = 'Prism.highlightAll()';
