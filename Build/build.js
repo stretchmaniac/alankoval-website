@@ -219,7 +219,7 @@ function buildPage(contentPath, newPath, postData, onFinish = ()=>{}){
 				const divWrapper = pageDoc.createElement('div');
 				divWrapper.className = 'padding';
 				
-				divWrapper.innerHTML = getDiscusHTML(postData.realUrl, postData.identifier);
+				divWrapper.innerHTML = getDisqusHTML(postData.realUrl, postData.identifier);
 				
 				headerDoc.getElementsByClassName('comments')[0].appendChild(divWrapper);
 			}
@@ -311,7 +311,7 @@ function constructPostLine(post, doc){
     return postObj;
 }
 
-function getDiscusHTML(url, identifier){
+function getDisqusHTML(url, identifier){
 	return `
 		<div id="disqus_thread"></div>
 		<script>
@@ -322,7 +322,7 @@ function getDiscusHTML(url, identifier){
 		(function() {
 		var d = document, s = d.createElement('script');
 		
-		s.src = '//alankoval.disqus.com/embed.js';
+		s.src = 'https://alankoval.disqus.com/embed.js';
 		
 		s.setAttribute('data-timestamp', +new Date());
 			(d.head || d.body).appendChild(s);
