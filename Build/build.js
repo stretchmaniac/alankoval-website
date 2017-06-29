@@ -121,7 +121,7 @@ for(const folder of postFolders){
 			throw new Error(`name=identifier metadata not found for file ${postUrl}$`);
 		}
 		
-		postData.realUrl = 'http://alankoval.com/posts/' + postData.url;
+		postData.realUrl = 'https://alankoval.com/posts/' + postData.url;
 		
 		// put all the other files under the directory 'identifier/name'
 		exec(`mkdir "result/posts/${postData.identifier}"`);
@@ -208,13 +208,13 @@ function buildPage(contentPath, newPath, postData, onFinish = ()=>{}){
 			}
 			if(dependenciesString.includes('prism')){
 				const newEl = newScriptElement();
-				newEl.src = 'http://alankoval.com/prism/prism.js';
+				newEl.src = 'https://alankoval.com/prism/prism.js';
 				
 				pageDoc.head.appendChild(newEl);
 				
 				// also need the .css file 
 				const newStyleEl = pageDoc.createElement('link');
-				newStyleEl.href = 'http://alankoval.com/prism/prism.css';
+				newStyleEl.href = 'https://alankoval.com/prism/prism.css';
 				newStyleEl.rel = 'stylesheet';
 				
 				pageDoc.head.appendChild(newStyleEl);
@@ -276,7 +276,7 @@ function buildPage(contentPath, newPath, postData, onFinish = ()=>{}){
 }
 
 function replaceLinksForDevelopement(doc){
-	// replace http://alankoval.com/ with C:/.../ in all a, script and link tags
+	// replace https://alankoval.com/ with C:/.../ in all a, script and link tags
 	elements = [];
 	for(const tag of ['a', 'script', 'link']){
 		elements = elements.concat([...doc.getElementsByTagName(tag)]);
@@ -287,8 +287,8 @@ function replaceLinksForDevelopement(doc){
 			// setting the href automatically reduces folder/file to the full path. In development, 
 			// this means that it is assigned the full path it is in, which is not what we're looking for.
 			// however, if we are changing it, it is a full path so no harm done
-			if(el[attr] && el[attr].match(/http:\/\/alankoval\.com/g)){
-				el[attr] = el[attr].replace(/http:\/\/alankoval\.com/g,
+			if(el[attr] && el[attr].match(/https:\/\/alankoval\.com/g)){
+				el[attr] = el[attr].replace(/https:\/\/alankoval\.com/g,
 					`C:/Users/Stretch/Alan's Stuff/Coding/alankoval.com/alankoval-website/Build/result`);
 			}
 		}

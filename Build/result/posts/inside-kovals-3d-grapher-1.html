@@ -9,7 +9,7 @@
 	<meta name="identifier" content="gwRTtkF4C7daCGjzf4uvxESF8LtnXqywsBHUwzWtm9a9PUJLG3">
 	<meta name="title" content="Inside Koval's 3D Grapher – Part I">
 	<meta name="description" content="Picking apart the algorithms behind Koval's 3D Grapher">
-	<meta name="thumbnail" content="http://i.imgur.com/INnANzT.png">
+	<meta name="thumbnail" content="https://i.imgur.com/INnANzT.png">
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script><script type="text/javascript" src="C:/Users/Stretch/Alan's Stuff/Coding/alankoval.com/alankoval-website/Build/result/prism/prism.js"></script><link href="C:/Users/Stretch/Alan's Stuff/Coding/alankoval.com/alankoval-website/Build/result/prism/prism.css" rel="stylesheet"></head>
 <body>	
 	<div id="container">
@@ -34,12 +34,12 @@
         <a href="C:/Users/Stretch/Alan's Stuff/Coding/alankoval.com/alankoval-website/Build/result/3dgrapher">Koval's 3D Grapher</a> is an interactive 
         function plotter in three dimensions. Here's an example plot:
         </p><div>
-            <img src="http://i.imgur.com/gosjFpI.png" width="100%">
+            <img src="https://i.imgur.com/gosjFpI.png" width="100%">
         </div>
         <br>
         And another: 
         <div>
-            <img src="http://i.imgur.com/INnANzT.png" width="100%">
+            <img src="https://i.imgur.com/INnANzT.png" width="100%">
         </div>
     <p></p>
     <p>
@@ -62,7 +62,7 @@
     so \(g(x,y,z)=\sqrt{x^2+y^2+z^2}-1=0\). For a sinusoid, we have 
     \(g(x,y,z)=\sin{x}+\sin{y}-z=0\)</p>
     <div style="display:flex;flex-direction:column">
-        <img style="max-width:70%;margin:auto" src="http://i.imgur.com/Wcf9Py9.png">
+        <img style="max-width:70%;margin:auto" src="https://i.imgur.com/Wcf9Py9.png">
         <span style="margin-top:5px;font-size:11px;text-align:center">
             Each point fulfills the equation \(\sin{x}+\sin{y}-z=0\)
         </span>
@@ -77,8 +77,8 @@
     </p>
     <div style="display:flex;flex-direction:column;justify-content:center">
         <div style="display:flex;flex-direction:row">
-            <div style="width:50%"><img style="width:80%;margin-left:10%" src="http://i.imgur.com/aMuRbga.png"></div>
-            <div style="width:50%"><img style="width:80%;margin-left:10%" src="http://i.imgur.com/H1TOq52.png"></div>
+            <div style="width:50%"><img style="width:80%;margin-left:10%" src="https://i.imgur.com/aMuRbga.png"></div>
+            <div style="width:50%"><img style="width:80%;margin-left:10%" src="https://i.imgur.com/H1TOq52.png"></div>
         </div>
         <span style="display:block;margin:auto;font-size:11px;text-align:center;max-width:50%">
             The image on the left shows \(11^3\) points evenly distributed over an interval. 
@@ -106,8 +106,8 @@
     </p>
     <div style="display:flex;flex-direction:column;justify-content:center">
         <div style="display:flex;flex-direction:row">
-            <div style="width:50%"><img style="width:80%;margin-left:10%" src="http://i.imgur.com/te1FTZm.png"></div>
-            <div style="width:50%"><img style="width:80%;margin-left:10%" src="http://i.imgur.com/jP8A7tB.png"></div>
+            <div style="width:50%"><img style="width:80%;margin-left:10%" src="https://i.imgur.com/te1FTZm.png"></div>
+            <div style="width:50%"><img style="width:80%;margin-left:10%" src="https://i.imgur.com/jP8A7tB.png"></div>
         </div>
         <span style="display:block;margin:auto;font-size:11px;text-align:center;max-width:50%">
             The image on the left shows an orthographic overhead view of the surface on the 
@@ -128,7 +128,7 @@
         Which gives the viewer the impression that the entire surface is plotted instead of a 
         selection of points?
         </p><div style="display:flex;flex-direction:column">
-            <img style="max-width:70%;margin:auto" src="http://i.imgur.com/mfNxLY5.png">
+            <img style="max-width:70%;margin:auto" src="https://i.imgur.com/mfNxLY5.png">
             <span style="margin-top:5px;font-size:11px;text-align:center">
                 How should we interpolate between two points? Is a squiggle better than a straight line?
             </span>
@@ -153,7 +153,7 @@
         the right and left, one above and one below. That way, we can know what connections 
         exist come drawing time. 
         </p><div style="display:flex;flex-direction:column">
-            <img style="max-width:70%;margin:auto" src="http://i.imgur.com/BH465dM.png">
+            <img style="max-width:70%;margin:auto" src="https://i.imgur.com/BH465dM.png">
             <span style="margin-top:5px;font-size:11px;text-align:center">
                 Each point has as pointer to each of its four neighbors. 
             </span>
@@ -171,7 +171,7 @@
         point to the point below it and one to the point on the right. This guarantees that 
         no line will be drawn twice, unlike a polygon system. 
         </p><div style="display:flex;flex-direction:column">
-            <img style="max-width:70%;margin:auto" src="http://i.imgur.com/yPbc9s8.png">
+            <img style="max-width:70%;margin:auto" src="https://i.imgur.com/yPbc9s8.png">
             <span style="margin-top:5px;font-size:11px;text-align:center">
                 Each point connected to two of its neighbors can fill an entire surface. 
             </span>
@@ -180,7 +180,7 @@
     <p>
         Using this system, we can now plot a rudimentary surface.
         </p><div style="display:flex;flex-direction:column">
-            <img style="max-width:70%;margin:auto" src="http://i.imgur.com/to34YiY.png">
+            <img style="max-width:70%;margin:auto" src="https://i.imgur.com/to34YiY.png">
             <span style="margin-top:5px;font-size:11px;text-align:center">
                 A paraboloid surface: \(z=\frac{x^2+y^2}{10}\) 
             </span>
@@ -208,7 +208,7 @@
         This isn't that much of a problem until you realize what happens to the surface after 
         all the complex points are taken out: 
         </p><div style="display:flex;flex-direction:column">
-            <img style="max-width:70%;margin:auto" src="http://i.imgur.com/pjcqFGf.png">
+            <img style="max-width:70%;margin:auto" src="https://i.imgur.com/pjcqFGf.png">
             <span style="margin-top:5px;font-size:11px;text-align:center">
                 Wow! That is truly ugly.
             </span>
@@ -228,7 +228,7 @@
         the real boundary between real and nonreal points exists somewhere between these 
         two points.
         </p><div style="display:flex;flex-direction:column">
-            <img style="max-width:70%;margin:auto" src="http://i.imgur.com/WwAG9Pm.png">
+            <img style="max-width:70%;margin:auto" src="https://i.imgur.com/WwAG9Pm.png">
             <span style="margin-top:5px;font-size:11px;text-align:center">
                 A boundary exists somewhere between a real point and its bordering imaginary point. 
             </span>
@@ -306,7 +306,7 @@
         points, then the surface begins to look much more organic â€“ less blocky. Take a look at 
         the same half sphere as a more complete surface: 
         </p><div style="display:flex;flex-direction:column">
-            <img style="max-width:70%;margin:auto" src="http://i.imgur.com/XRygP81.png">
+            <img style="max-width:70%;margin:auto" src="https://i.imgur.com/XRygP81.png">
             <span style="margin-top:5px;font-size:11px;text-align:center">
                 Looking a lot better.
             </span>
@@ -345,7 +345,7 @@
         </ol>
         Take a look at the following diagram:
         <div style="display:flex;flex-direction:column">
-            <img style="max-width:70%;margin:auto" src="http://i.imgur.com/8Zy8cwC.png">
+            <img style="max-width:70%;margin:auto" src="https://i.imgur.com/8Zy8cwC.png">
             <span style="margin-top:5px;font-size:11px;text-align:center">
                 Each dot represents a loose end. The algorithms starts on the left red 
                 dot and transverses the left polygon, greedily connecting to the nearest 
@@ -358,7 +358,7 @@
     <p>
         And finally, we have our completed surface, ready for coloring.
         </p><div style="display:flex;flex-direction:column">
-            <img style="max-width:70%;margin:auto" src="http://i.imgur.com/2TT6kmY.png">
+            <img style="max-width:70%;margin:auto" src="https://i.imgur.com/2TT6kmY.png">
             <span style="margin-top:5px;font-size:11px;text-align:center">
                 The final surface, sans coloring, perspective and axes.
             </span>
@@ -380,7 +380,7 @@
 		<div id="disqus_thread"></div>
 		<script>
 		var disqus_config = function () {
-			this.page.url = 'http://alankoval.com/posts/inside-kovals-3d-grapher-1.html';
+			this.page.url = 'https://alankoval.com/posts/inside-kovals-3d-grapher-1.html';
 			this.page.identifier = 'gwRTtkF4C7daCGjzf4uvxESF8LtnXqywsBHUwzWtm9a9PUJLG3';
 		};
 		(function() {
@@ -396,7 +396,7 @@
 	</div></div>
 			</div>
 			<div class="side-bar">
-				<img id="side-bar-image" src="http://i.imgur.com/ClN0C3D.jpg">
+				<img id="side-bar-image" src="https://i.imgur.com/ClN0C3D.jpg">
 				<div id="side-bar-description">
 					I'm Alan Koval, a computer science and mathematics student at the University of 
 					Minnesota. See <a href="C:/Users/Stretch/Alan's Stuff/Coding/alankoval.com/alankoval-website/Build/result/about.html">more about me</a>.
