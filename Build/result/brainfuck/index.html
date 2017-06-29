@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+<meta charset="utf-8">
+<title>Brainfuck Interpreter</title>
+<link rel='stylesheet' href='brainfuck.css'>
+</head>
+
+<body onload="onload()">
+    <div id="content">
+        <div id="title">Brainfuck Interpreter</div>
+        <div id="commands">
+            <code>&gt;</code> &nbsp; move pointer right<br>
+            <code>&lt;</code> &nbsp; move pointer left<br>
+            <code>[</code>  &nbsp; jump past matching bracket if value at pointer is zero<br>
+            <code>]</code>  &nbsp; jump to matching bracket if value at pointer is nonzero<br>
+            <code>+</code>  &nbsp; increase value at pointer by 1<br>
+            <code>-</code>  &nbsp; decrease value at pointer by 1<br>
+            <code>.</code>  &nbsp; print value at pointer as character<br>
+            <code>,</code>  &nbsp; take input and store at pointer location<br>
+        </div>
+        <div id="code-area">
+            <code contenteditable="true" id="code"></code>
+            <span id="steps">Steps:</span>
+            <div id="buttons">
+                <button id='restart-button'>&#x21bb;</button>
+                <div id="step-forward-button"></div>
+                <div id="run-button"></div>
+                <div class="gone" id="pause-button"></div>
+                <div id="step-back-button"></div>
+            </div>
+        </div>
+        <br>
+        <div id='speed-scale'>
+            <span id='speed-scale-label'>Speed:</span> 
+            <input type='range' id='speed-scale-input'>
+        </div>
+        <br>
+        <div id="output-area">
+            <span style="margin:10px">Output</span>
+            <br>
+            <div id="output"></div>
+            <div class="hidden" id="before-not-empty"></div>
+            <div class="hidden" id="not-empty">Just so you know... it's not empty. 
+                Many of the first ASCII chars are invisible.</div>
+        </div>
+        <div id='name-div'>
+            Created by <a href='http://alankoval.com'>Alan Koval</a>
+        </div>
+    </div>
+    <script type="text/javascript" src="brainf.js"></script>
+</body>
+</html>

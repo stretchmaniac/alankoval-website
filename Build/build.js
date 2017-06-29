@@ -12,6 +12,9 @@
 //  3dgrapher
 //      index.html
 //      ...dependencies
+//  other projects
+//		...
+//  ...
 //	posts
 //		post1.html
 //		post2.html
@@ -28,8 +31,6 @@ const {JSDOM} = require('jsdom');
 const files = require('fs');
 
 const git = '"C:\\Program Files\\Git\\bin\\git.exe"';
-//get the latest version of the website from github
-//exec(`${git} pull origin master`);
 
 // Remove result directory, then add it back (remove all the files)
 // /s is for removing all sub-elements, /q is for quiet (no confirmation)
@@ -44,6 +45,27 @@ buildPage('../About/about.html', 'result/about.html', false);
 // projects page
 buildPage('../Projects/projects.html', 'result/projects.html', false);
 
+// copy the Build/result folder from each app, deliniated in ../..
+// then rename 'result' to the contents in the url.txt file in Build
+const apps = files.readdirSync('../..').filter(x => x !== 'alankoval-website');
+for(const app of apps){
+	// check for a build folder
+	if(files.readdirSync(`../../${app}`).filter(x => x === 'Build').length !== 1){
+		throw new Error(`Missing Build folder in app ${app}`);
+	}
+	
+	// check for a results folder in Build and a url.txt
+	if(files.readdirSync(`../../${app}/Build`).filter(x => x === 'url.txt' || x === 'result').length !== 2){
+		throw new Error(`Missing url.txt file or result folder in Build folder of app ${app}`);
+	}
+	
+	// copy result folder
+	exec(`echo d | xcopy /s /q /r /y "..\\..\\${app}\\Build\\result" "result\\result"`);
+	// rename result folder to name in url.txt
+	const newFolderName = files.readFileSync(`../../${app}/Build/url.txt`).toString();
+	exec(`ren "result/result" "${newFolderName}"`);
+}
+
 // we'll build the blog page later, before editing
 
 // copy over all the files in Boiler Plate 
@@ -55,7 +77,7 @@ for(const name of files.readdirSync('../Boiler Plate')){
 	
 	// if the child is a directory, use xcopy
 	if(files.statSync(`../Boiler Plate/${name}`).isDirectory()){
-		exec(`echo d | xcopy /q /r /y "../Boiler Plate/${name}" "result/${name}"`);
+		exec(`echo d | xcopy /s /q /r /y "../Boiler Plate/${name}" "result/${name}"`);
 	}else{
 		copy('../Boiler Plate', name, 'result', name);
 	}
