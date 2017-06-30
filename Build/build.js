@@ -263,6 +263,11 @@ function buildPage(contentPath, newPath, postData, onFinish = ()=>{}){
 				replaceLinksForDevelopement(headerDoc);
 			}
 			
+			// about page only, remove the side bar telling who I am
+			if(newPath === 'result/about.html'){
+				headerDoc.getElementsByClassName('side-bar')[0].style.display = 'none';
+			}
+			
 			// save serialized new document to the target file
 			files.writeFile(newPath, headerDom.serialize(), err => {
 				if(err){
