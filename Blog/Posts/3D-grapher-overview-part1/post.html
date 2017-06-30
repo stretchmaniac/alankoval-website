@@ -12,7 +12,7 @@
 </head>
 <body>
 <div style='padding:25px; width:calc(100% - 50px)'>
-    <span style='font-size:9px'>3/10/2017 > Math, Javascript</span>
+    <span class='info-font'>3/10/2017 > Math, Javascript</span>
     <h1>Inside Koval's 3D Grapher</h1>
     <p style='margin-top:50px'>
         <a href='https://alankoval.com/3dgrapher'>Koval's 3D Grapher</a> is an interactive 
@@ -47,7 +47,7 @@
     \(g(x,y,z)=\sin{x}+\sin{y}-z=0\)</p>
     <div style='display:flex;flex-direction:column'>
         <img style='max-width:70%;margin:auto' src='https://i.imgur.com/Wcf9Py9.png'>
-        <span style='margin-top:5px;font-size:11px;text-align:center'>
+        <span class='info-font' style='margin-top:5px;text-align:center'>
             Each point fulfills the equation \(\sin{x}+\sin{y}-z=0\)
         </span>
     </div>
@@ -64,7 +64,7 @@
             <div style='width:50%'><img style='width:80%;margin-left:10%' src='https://i.imgur.com/aMuRbga.png'></div>
             <div style='width:50%'><img style='width:80%;margin-left:10%' src='https://i.imgur.com/H1TOq52.png'></div>
         </div>
-        <span style='display:block;margin:auto;font-size:11px;text-align:center;max-width:50%'>
+        <span class='info-font' style='display:block;margin:auto;text-align:center;max-width:50%'>
             The image on the left shows \(11^3\) points evenly distributed over an interval. 
             The image on the right shows the points for which \(|\sin{x}+\sin{y}-z|&lt;\frac{1}{2}\). 
         </span>
@@ -93,7 +93,7 @@
             <div style='width:50%'><img style='width:80%;margin-left:10%' src='https://i.imgur.com/te1FTZm.png'></div>
             <div style='width:50%'><img style='width:80%;margin-left:10%' src='https://i.imgur.com/jP8A7tB.png'></div>
         </div>
-        <span style='display:block;margin:auto;font-size:11px;text-align:center;max-width:50%'>
+        <span class='info-font' style='display:block;margin:auto;text-align:center;max-width:50%'>
             The image on the left shows an orthographic overhead view of the surface on the 
             right. Note that the grid corresponds to selected values of \(x\) and \(y\) 
             and the height is computed.
@@ -113,7 +113,7 @@
         selection of points?
         <div style='display:flex;flex-direction:column'>
             <img style='max-width:70%;margin:auto' src='https://i.imgur.com/mfNxLY5.png'>
-            <span style='margin-top:5px;font-size:11px;text-align:center'>
+            <span class='info-font' style='margin-top:5px;text-align:center'>
                 How should we interpolate between two points? Is a squiggle better than a straight line?
             </span>
         </div>
@@ -138,7 +138,7 @@
         exist come drawing time. 
         <div style='display:flex;flex-direction:column'>
             <img style='max-width:70%;margin:auto' src='https://i.imgur.com/BH465dM.png'>
-            <span style='margin-top:5px;font-size:11px;text-align:center'>
+            <span class='info-font' style='margin-top:5px;text-align:center'>
                 Each point has as pointer to each of its four neighbors. 
             </span>
         </div>
@@ -156,7 +156,7 @@
         no line will be drawn twice, unlike a polygon system. 
         <div style='display:flex;flex-direction:column'>
             <img style='max-width:70%;margin:auto' src='https://i.imgur.com/yPbc9s8.png'>
-            <span style='margin-top:5px;font-size:11px;text-align:center'>
+            <span class='info-font' style='margin-top:5px;text-align:center'>
                 Each point connected to two of its neighbors can fill an entire surface. 
             </span>
         </div>
@@ -165,7 +165,7 @@
         Using this system, we can now plot a rudimentary surface.
         <div style='display:flex;flex-direction:column'>
             <img style='max-width:70%;margin:auto' src='https://i.imgur.com/to34YiY.png'>
-            <span style='margin-top:5px;font-size:11px;text-align:center'>
+            <span class='info-font' style='margin-top:5px;text-align:center'>
                 A paraboloid surface: \(z=\frac{x^2+y^2}{10}\) 
             </span>
         </div>
@@ -193,7 +193,7 @@
         all the complex points are taken out: 
         <div style='display:flex;flex-direction:column'>
             <img style='max-width:70%;margin:auto' src='https://i.imgur.com/pjcqFGf.png'>
-            <span style='margin-top:5px;font-size:11px;text-align:center'>
+            <span class='info-font' style='margin-top:5px;text-align:center'>
                 Wow! That is truly ugly.
             </span>
         </div>
@@ -213,7 +213,7 @@
         two points.
         <div style='display:flex;flex-direction:column'>
             <img style='max-width:70%;margin:auto' src='https://i.imgur.com/WwAG9Pm.png'>
-            <span style='margin-top:5px;font-size:11px;text-align:center'>
+            <span class='info-font' style='margin-top:5px;text-align:center'>
                 A boundary exists somewhere between a real point and its bordering imaginary point. 
             </span>
         </div>
@@ -292,7 +292,7 @@
         the same half sphere as a more complete surface: 
         <div style='display:flex;flex-direction:column'>
             <img style='max-width:70%;margin:auto' src='https://i.imgur.com/XRygP81.png'>
-            <span style='margin-top:5px;font-size:11px;text-align:center'>
+            <span class='info-font' style='margin-top:5px;text-align:center'>
                 Looking a lot better.
             </span>
         </div>
@@ -331,7 +331,7 @@
         Take a look at the following diagram:
         <div style='display:flex;flex-direction:column'>
             <img style='max-width:70%;margin:auto' src='https://i.imgur.com/8Zy8cwC.png'>
-            <span style='margin-top:5px;font-size:11px;text-align:center'>
+            <span class='info-font' style='margin-top:5px;text-align:center'>
                 Each dot represents a loose end. The algorithms starts on the left red 
                 dot and transverses the left polygon, greedily connecting to the nearest 
                 dot. When it gets to the most left dot, the nearest unused dot is farther 
@@ -344,7 +344,7 @@
         And finally, we have our completed surface, ready for coloring.
         <div style='display:flex;flex-direction:column'>
             <img style='max-width:70%;margin:auto' src='https://i.imgur.com/2TT6kmY.png'>
-            <span style='margin-top:5px;font-size:11px;text-align:center'>
+            <span class='info-font' style='margin-top:5px;text-align:center'>
                 The final surface, sans coloring, perspective and axes.
             </span>
         </div>

@@ -18,7 +18,7 @@ body{
     flex-grow:1;
 }
 #name{
-    font-size:19px;
+    font-size:20px;
     text-decoration: none;
     color:black;
     float:right;
@@ -95,12 +95,14 @@ body{
 
 
 .footer-line-title{
-    font-size:30px;
+    font-size:20px;
 }
 
 .post-line{
     width:calc(100% - 30px);
-    padding:15px;
+    padding-bottom:20px;
+	padding-top:20px;
+	padding-left:10px;
     transition: all .2s;
     border-bottom:1px solid rgba(0,0,0,.2);
     cursor:pointer;
@@ -125,11 +127,12 @@ body{
 }
 
 .post-line-title{
-    font-size:30px;
+    font-size:25px;
+	font-weight:bold;
 }
 
 .post-line-date{
-    font-size:9px;
+    font-size:14px;
     position:absolute;
     bottom:5px;
     right:10px;
@@ -167,7 +170,7 @@ figure img{
 }
 
 figcaption{
-    font-size:13px;
+    font-size:15px;
     max-width:50%;
 }
 
@@ -202,4 +205,10 @@ li{
 .center{
 	margin-left:50%;
 	transform:translateX(-50%);
+}
+.info-font{
+	font-size:14px;
+}
+code{
+	font-size:15px;
 }
