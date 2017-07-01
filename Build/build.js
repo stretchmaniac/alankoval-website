@@ -43,9 +43,9 @@
 //    - url.txt
 
 // set this to false to build the official version, versus for testing purposes
-const developing = true;
+const developing = false;
 // set this to true to deploy the final version to amazon s3
-const deploy = false;
+const deploy = true;
 // for running command line args
 const exec = require('child_process').execSync;
 // for manipulating HTML as a DOM
