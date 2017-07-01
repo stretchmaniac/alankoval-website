@@ -21,6 +21,26 @@
 //      AeAsGgtHhSg... (folder containing dependencies for post1)
 //      YuirtWtuerQ... (folder containing dependencies for post2)
 
+// blog post specification:
+// under <head>, include meta tags in the following format:
+// <meta name='...' content='...'>
+// the following names are required:
+//   dependencies (content = mathjax | jquery | prism | header-styles)
+//   date
+//   tags
+//   url (the file name, so my_project.html, for example)
+//   identifier - a unique ID for the post (I randomly generated them), associated with Disqus
+//   description (of the post)
+//   thumbnail (url of picture)
+
+// app specification 
+// every app must be a folder under Alan's Stuff/Coding/alankoval.com 
+// every app needs to have at least the following structure:
+//   Build
+//    - result
+//       - (the app) 
+//    - url.txt
+
 // set this to false to build the official version, versus for testing purposes
 const developing = true;
 // for running command line args
