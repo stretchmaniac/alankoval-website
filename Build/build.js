@@ -9,6 +9,7 @@
 //  blog.html
 //  header-styles.css
 //  prism (folder)
+//  error.html
 //  3dgrapher
 //      index.html
 //      ...dependencies
@@ -43,6 +44,8 @@
 
 // set this to false to build the official version, versus for testing purposes
 const developing = true;
+// set this to true to deploy the final version to amazon s3
+const deploy = false;
 // for running command line args
 const exec = require('child_process').execSync;
 // for manipulating HTML as a DOM
@@ -61,6 +64,9 @@ exec('mkdir result');
 
 // about page (we'll proceed in order)
 buildPage('../About/about.html', 'result/about.html', false);
+
+// error page
+buildPage('../404 Page/error.html', 'result/error.html', false);
 
 // projects page
 buildPage('../Projects/projects.html', 'result/projects.html', false);
@@ -181,12 +187,16 @@ function onPostDataFinish(){
 		}
 		
 		// save result 
-		files.writeFile('result/blog.html', blogDom.serialize(), err => {
-			if(err){
-				console.log(err);
-			}
-		});
+		files.writeFileSync('result/blog.html', blogDom.serialize());
+		onBuildFinish();
 	});	
+}
+
+function onBuildFinish(){
+	if(deploy){
+		// aws is a console command. We need to sink the build folder with the whole s3 bucket
+		exec('aws s3 sync result s3://alankoval.com --delete');
+	}
 }
 
 // takes a ___-content.html file, wraps it in the necessary headers and copies it
@@ -289,11 +299,7 @@ function buildPage(contentPath, newPath, postData, onFinish = ()=>{}){
 			}
 			
 			// save serialized new document to the target file
-			files.writeFile(newPath, headerDom.serialize(), err => {
-				if(err){
-					console.log(err);
-				}
-			});
+			files.writeFileSync(newPath, headerDom.serialize());
 			
 			onFinish();
 		});
