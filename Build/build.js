@@ -45,7 +45,7 @@
 // set this to false to build the official version, versus for testing purposes
 const developing = false;
 // set this to true to deploy the final version to amazon s3
-const deploy = true;
+const deploy = false;
 // for running command line args
 const exec = require('child_process').execSync;
 // for manipulating HTML as a DOM
