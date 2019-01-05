@@ -43,7 +43,7 @@
 //    - url.txt
 
 // set this to false to build the official version, versus for testing purposes
-const developing = false;
+const developing = true;
 // set this to true to deploy the final version to amazon s3
 const deploy = false;
 // for running command line args
@@ -384,5 +384,4 @@ function getDisqusHTML(url, identifier){
 		<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
 	`;
 }
-
 
