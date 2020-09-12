@@ -43,9 +43,9 @@
 //    - url.txt
 
 // set this to false to build the official version, versus for testing purposes
-const developing = true;
+const developing = false;
 // set this to true to deploy the final version to amazon s3
-const deploy = false;
+const deploy = true;
 // for running command line args
 const shell = require('shelljs');
 // for manipulating HTML as a DOM
@@ -73,6 +73,9 @@ buildPage('../404 Page/error.html', 'result/error.html', false);
 
 // projects page
 buildPage('../Projects/projects.html', 'result/projects.html', false);
+
+// hacks page
+buildPage('../Hacks/hacks.html', 'result/hacks.html', false);
 
 
 console.log('---Retrieving application builds---------')
@@ -204,7 +207,7 @@ function onPostDataFinish(){
 
 function onBuildFinish(){
 	if(deploy){
-		// aws is a console command. We need to sink the build folder with the whole s3 bucket
+		// aws is a console command. We need to sync the build folder with the whole s3 bucket
 		shell.exec('aws s3 sync result s3://alankoval.com --delete', {async:false});
 	}
 }
@@ -306,7 +309,10 @@ function buildPage(contentPath, newPath, postData, onFinish = ()=>{}){
 
 			// about page only, remove the side bar telling who I am
 			if(newPath === 'result/about.html'){
-				headerDoc.getElementsByClassName('side-bar')[0].style.display = 'none';
+				const elList = headerDoc.getElementsByClassName('side-bar');
+				if(elList.length > 0){
+					headerDoc.getElementsByClassName('side-bar')[0].style.display = 'none';
+				}
 			}
 
 			// save serialized new document to the target file

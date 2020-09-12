@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang='en-us'>
+<head>
+	<meta name='dependencies' content='header-styles prism mathjax'>
+</head>
+<body>
+    <div style='padding:10px'>
+        <h1>UMN Schedule to Google Calendar</h1>
+        <h3>Updated Fall 2020</h3>
+        <p>
+            <i>Now supports recurring events!</i>
+        </p>
+        <p>
+            This script ports the class schedule from MyU to your google calendar. To use:
+            <ol>
+                <li>Go to MyU (<a href='https://www.myu.umn.edu'>myu.umn.edu</a>) and click the Academics tab. 
+                    Make sure the "My Classes" tab is selected and use the arrows navigate to the first 
+                    week of classes.</li>
+                <li>Right click anywhere on the page and click "Inspect". On Firefox it's called "Inspect Element"
+                    and on Safari you can follow <a href='https://stackoverflow.com/questions/40234993/how-to-inspect-element-using-safari-browser'>these</a>
+                    instructions. </li>
+                <li>Scroll to the Console tab on the window that pops up. Copy and paste the following code directly into the 
+                    console and press enter. <span style='font-weight:bold'>Note: Never paste random code from the internet into 
+                    your console! Make sure you trust me before continuing. A malicious attacker in my place could, for example,
+                    install malware, un-enroll you from all of your classes and pay your tuition.
+                    </span>
+                    <pre style='max-height:500px' class='language-javascript'>
+<code>// to run: go to myU and to the schedule page, then inspect element and paste this in the console
+
+const ICS_HEADER = `BEGIN:VCALENDAR
+PRODID:Calendar
+VERSION:2.0
+BEGIN:VTIMEZONE
+TZID:America/Chicago
+X-LIC-LOCATION:America/Chicago
+BEGIN:DAYLIGHT
+TZOFFSETFROM:-0600
+TZOFFSETTO:-0500
+TZNAME:CDT
+DTSTART:19700308T020000
+RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU
+END:DAYLIGHT
+BEGIN:STANDARD
+TZOFFSETFROM:-0500
+TZOFFSETTO:-0600
+TZNAME:CST
+DTSTART:19701101T020000
+RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU
+END:STANDARD
+END:VTIMEZONE`;
+
+const ICS_FOOTER = '\nEND:VCALENDAR';
+
+let idCount = 0;
+function getICSEntry(name, type, place, startDateStr, endDateStr, rrule){
+    let result = '\nBEGIN:VEVENT';
+    result += '\n' + (idCount++) + '@default';
+    result += '\nDESCRIPTION:' + type;
+    result += rrule ? '\n' + rrule : '';
+    const now = new Date();
+    let hours = now.getHours();
+    if(hours < 10){ hours = '0' + hours; }
+    let minutes = now.getMinutes();
+    if(minutes < 10){ minutes = '0' + minutes; }
+    let timeStr = hours + '' + minutes;
+    result += '\nDTSTAMP;TZID=America/Chicago:' + getICSDateString(now.getFullYear(), now.getMonth() + 1, now.getDate(), timeStr);
+    result += '\nDTSTART;TZID=America/Chicago:' + startDateStr;
+    result += '\nDTEND;TZID=America/Chicago:' + endDateStr;
+    result += '\nLOCATION:' + place;
+    result += '\nSUMMARY;LANGUAGE=en-us:' + name;
+    result += '\nTRANSP:TRANSPARENT';
+    result += '\nEND:VEVENT';
+    return result;
+}
+
+function getWeekDateString(){
+    let nextWeekButton = document.querySelector('[title=\'Next Week\']');
+    let dateH = nextWeekButton.parentElement.children[1];
+    let fullString = dateH.innerText;
+    return fullString.match(/\d\d\/\d\d\/\d\d\d\d/g)[0];
+}
+
+function getICSDateString(year, month, day, timeStr){
+    let monthStr = month + '';
+    while(monthStr.length < 2){ monthStr = '0' + monthStr; }
+    let dayStr = day + '';
+    while(dayStr.length < 2){ dayStr = '0' + dayStr; }
+    return year + '' + monthStr + dayStr + 'T' + timeStr + '00';
+}
+
+let days = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+
+function getClassDataForWeek(){
+    let weekData = {};
+    for(let d of days){
+        weekData[d] = [];
+    }
+    for(let day of days){
+        let dayGroup = document.querySelector('[data-day=\''+day+'\']');
+        if(!dayGroup){
+            return weekData;
+        }
+        // each class is an <a> element
+        let classElements = [];
+        for(let el of dayGroup.childNodes){
+            if(el.nodeName === 'A'){
+                classElements.push(el);
+            }
+        }
+
+        for(let c of classElements){
+            let name = c.children[0].innerText;
+            let details = c.children[1].innerText;
+            let [type, time, place] = details.split('\n');
+            weekData[day].push({name:name,time:time,place:place,type:type});
+        }
+    }
+    return weekData;
+}
+
+function isWeekEmpty(data){
+    for(let key in data){
+        if(data[key].length > 0){
+            return false;
+        }
+    }
+    return true;
+}
+
+function nextWeek(){
+    let nextWeekButton = document.querySelector('[title=\'Next Week\']');
+    nextWeekButton.click();
+}
+
+Date.prototype.addDays = function(days) {
+    var date = new Date(this.valueOf());
+    date.setDate(date.getDate() + days);
+    return date;
+}
+
+function mod(n, m) {
+    return ((n % m) + m) % m;
+}
+
+function toMilitary(hour, isAM){
+    if(isAM){
+        if(hour === 12){
+            return 0;
+        }
+        return hour;
+    }
+    if(hour === 12){
+        return 12;
+    }
+    return hour + 12;
+}
+
+
+let weeks = [];
+let weeksEmpty = 0;
+
+function proceed(){
+    let weekData = getClassDataForWeek();
+    if(weeksEmpty <= 1){
+        if(isWeekEmpty(weekData)){
+            weeksEmpty++;
+            weeks.push({isEmpty: true});
+        }else{
+            weeksEmpty = 0;
+            weeks.push({isEmpty: false, weekDate:getWeekDateString(), data:weekData});
+        }
+        nextWeek();
+        // wait until it finishes loading
+        setTimeout(proceed, 3000);
+    }else{
+        let dayDateConversion = {'Monday':0,'Tuesday':1,'Wednesday':2,'Thursday':3,'Friday':4};
+        for(let week of weeks){
+            if(week.isEmpty){
+                continue;
+            }
+            // map days to dates
+            let weekDate = new Date(week.weekDate);
+            for(let d of days){
+                let classes = week.data[d];
+                for(let c of classes){
+                    // english/US date format (locale)
+                    let classDate = weekDate.addDays(dayDateConversion[d]);
+                    let year = classDate.getFullYear();
+                    let month = classDate.getMonth() + 1;
+                    let day = classDate.getDate();
+                    let classTime = c.time;
+                    // isolate start/end time. myU uses the hh:mm - hh:mm AM/PM format
+                    let lastIsAM = !!classTime.match(/AM/g);
+                    let [startTime, endTime] = classTime.match(/\d{1,2}:\d{1,2}/g);
+                    let [startTimeHour, endTimeHour] = [startTime.split(':')[0], endTime.split(':')[0]].map(x=>parseInt(x));
+                    
+                    // we want to know if the first hour occurs in the AM or the PM.
+                    // we make the assumption that no class lasts more than 12 hours (apparently the folks
+                    // who made myU thought so too), so we take the option (am vs pm) in which the class length is less
+                    let militaryAMOption = toMilitary(startTimeHour, true);
+                    let militaryPMOption = toMilitary(startTimeHour, false);
+                    let militaryEnd = toMilitary(endTimeHour, lastIsAM);
+
+                    let firstIsAM;
+                    if(mod(militaryEnd - militaryAMOption, 24) < mod(militaryEnd - militaryPMOption, 24)){
+                        firstIsAM = true;
+                    } else {
+                        firstIsAM = false;
+                    }
+
+                    c.year = year;
+                    c.month = month;
+                    c.day = day;
+                    const toTimeString = (timeStr, isAM) => {
+                        const [hr, minute] = timeStr.split(':');
+                        const militaryHr = toMilitary(parseInt(hr), isAM) + '';
+                        while(militaryHr.length < 2){ militaryHr = '0' + militaryHr; }
+                        while(minute.length < 2){ minute = '0' + minute; }
+                        return militaryHr + minute;
+                    };
+                    c.startTime = toTimeString(startTime, firstIsAM);
+                    c.endTime = toTimeString(endTime, lastIsAM);
+                    // flag so we don't process this event twice
+                    c.used = false;
+                }
+            }
+        }
+
+        // returns null if doesn't exist
+        function getClassOnDay(weekIndex, dayIndex, originalClass){
+            if(weeks[weekIndex].isEmpty){
+                return null;
+            }
+            for(let c of weeks[weekIndex].data[days[dayIndex]]){
+                if(c.name === originalClass.name && 
+                    c.time === originalClass.time &&
+                    c.place === originalClass.place &&
+                    c.type === originalClass.type){
+                    return c;
+                }
+            }
+            return null;
+        }
+
+        // our ical object
+        let calendar = ICS_HEADER;
+
+        for(let weekIndex = 0; weekIndex < weeks.length; weekIndex++){
+            if(weeks[weekIndex].isEmpty){
+                continue;
+            }
+            for(let dayIndex = 0; dayIndex < 5; dayIndex++){
+                let classes = weeks[weekIndex].data[days[dayIndex]];
+                for(let c of classes){
+                    if(c.used){
+                        // already covered this single class instance in a recurring event
+                        continue;
+                    }
+                    c.used = true;
+                    // otherwise search for event to go in a recurring event along with this one
+                    // first check the next days in this week 
+                    let classDays = [dayIndex];
+                    for(let i = dayIndex + 1; i < dayIndex + 5; i++){
+                        let w = i >= 5 ? weekIndex + 1 : weekIndex;
+                        let c2 = getClassOnDay(w, i % 5, c);
+                        if(c2 != null){
+                            classDays.push(i % 5);
+                            c2.used = true;
+                        }
+                    }
+                    let numEvents = classDays.length;
+
+                    // now continue to following weeks until we find some day in classDays where this not a matching event
+                    let classDaysIndex = 0;
+                    let workingWeekIndex = weekIndex + 1;
+                    while(true){
+                        const day = classDays[classDaysIndex];
+                        let c2 = getClassOnDay(workingWeekIndex, classDays[classDaysIndex], c);
+                        if(c2 != null){
+                            if(!c2.used){
+                                numEvents++;
+                            }
+                            c2.used = true;
+                        }else {
+                            break;
+                        }
+                        classDaysIndex = (classDaysIndex + 1) % classDays.length;
+                        if(classDays[classDaysIndex] <= day){
+                            workingWeekIndex++;
+                        }
+                    }
+
+                    // now add a single event if we only found a single event, otherwise a recurring event 
+                    let rrule = null;
+                    if(numEvents > 1){
+                        rrule = 'RRULE:FREQ=WEEKLY;COUNT=' + numEvents + ';BYDAY=' + classDays.map(x => ['MO', 'TU', 'WE', 'TH', 'FR'][x]).join(',');
+                    }
+                    
+                    console.log(c);
+                    calendar += getICSEntry(c.name, c.type, c.place, getICSDateString(c.year, c.month, c.day, c.startTime), getICSDateString(c.year, c.month, c.day, c.endTime), rrule);
+                }
+            }
+        }
+
+        calendar += ICS_FOOTER;
+        
+        // download file
+        download('umn_calendar_to_google.ics', calendar);
+    }
+}
+
+// see https://stackoverflow.com/questions/3665115/how-to-create-a-file-in-memory-for-user-to-download-but-not-through-server
+function download(filename, text) {
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    element.setAttribute('download', filename);
+    
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    
+    element.click();
+    
+    document.body.removeChild(element);
+}
+
+proceed();</code>
+                </li>
+                <li>Wait patiently while the program scrolls through all the weeks. If you are really impatient you 
+                    can change the line <code>setTimeout(proceed, 3000);</code> to <code>setTimeout(proceed, 1000);</code> or 
+                    even <code>setTimeout(proceed, 500);</code> if you have really fast internet and are feeling lucky. After it finishes 
+                    it should download a ics file called <code>umn_calendar_to_google.ics</code>. 
+                </li>
+                <li>Follow step 2 from <a href='https://support.google.com/calendar/answer/37118?hl=en'>Import Events to 
+                    Google Calendar</a>.</li>
+            </ol>
+            Didn't work for you? Shoot me an email at <code>koval048@umn.edu</code> and I'll give it a look.
+        </p>
+        <h1>Excel Formula Tool</h1>
+        <p><a href='https://alankoval.com/harry/src/index.html'>Harry's Tool</a></p>
+        <p>
+            Typing long expressions into Google sheets or MS excel can be a challenge. A friend 
+            thought a tool that used an math expression editor to generate an excel-style formula would 
+            be helpful. I already had a half-way expression parser sitting around from Koval's 3D Grapher, so 
+            I repurposed it here. A few notes 
+            <ul>
+                <li>Be sure to separate adjacent variables with "*". I.e. write "a*b*c" (\(a\cdot b\cdot c\)) 
+                    instead of "abc" (\(abc\)). 
+                </li>
+                <li>Both Google Sheets and MS Excel have 
+                    very strange behavior when evaluating exponents prefixed with a negative sign. Turns out 
+                    that <code>-x^n = (-x)^n</code> in excel language. Instead write <code>-1*x^n</code>.
+                </li>
+            </ul>
+        </p>
+    </div>
+</body>
+</html>

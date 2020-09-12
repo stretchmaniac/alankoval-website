@@ -71,6 +71,9 @@ buildPage('../404 Page/error.html', 'result/error.html', false);
 // projects page
 buildPage('../Projects/projects.html', 'result/projects.html', false);
 
+// hacks page
+buildPage('../Hacks/hacks.html', 'result/hacks.html', false);
+
 // copy the Build/result folder from each app, deliniated in ../..
 // then rename 'result' to the contents in the url.txt file in Build
 const apps = files.readdirSync('../..').filter(x => x !== 'alankoval-website');
@@ -295,7 +298,10 @@ function buildPage(contentPath, newPath, postData, onFinish = ()=>{}){
 			
 			// about page only, remove the side bar telling who I am
 			if(newPath === 'result/about.html'){
-				headerDoc.getElementsByClassName('side-bar')[0].style.display = 'none';
+				const elList = headerDoc.getElementsByClassName('side-bar');
+				if(elList.length > 0){
+					headerDoc.getElementsByClassName('side-bar')[0].style.display = 'none';
+				}
 			}
 			
 			// save serialized new document to the target file
