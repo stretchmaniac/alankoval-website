@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+	<meta name='dependencies' content='mathjax header-styles'>
+	<meta name='date' content='3/7/2022'>
+	<meta name='tags' content='Math'>
+	<meta name='url' content='gf-11.html'>
+	<meta name='title' content="Wilf's Generatingfunctionology: Intro and Section 1.1">
+	<meta name='description' content='Intro and part 1.1'>
+	<meta name='thumbnail' content=''>
+	<meta name='identifier' content='da3908d9-ffdf-435b-a836-c0476ec57358'>
+</head>
+<body>
+	<div style='padding:25px; width:calc(100% - 50px)'>
+        <span class='info-font'>February 2022 > Math</span>
+        <h1>Wilf's Generatingfunctionology: Intro and Section 1.1</h1>
+        <h3>Introduction</h3>
+		<p>
+            This series will be a read-through of Herbert S. Wilf's short (text?)book Generatingfunctionology, third edition.
+            The book is indeed all about generating functions, and since I did not receive a formal introduction to the 
+            topic at the University of Minnesota, I thought it a decent target to clean out the math-brain cobwebs since
+            graduation.
+        </p>
+        <p>
+            The book appears to fall cleanly in the "combinatorics" category. Leafing through the pages, it is 
+            clear that it is accessible (at least in bulk) to anyone with a few university math classes under their belt.
+        </p>
+        <p>
+            I plan to make this series most readable to those with at least an undergraduate degree (in math).
+        </p>
+        <h3>Introduction</h3>
+        <p>
+            Generating functions are introduced in the context of a sequence \((a_n)_{n=1}^\infty\).
+            Presented as a kind of stand-in for an explicit formula \(a_n=\ldots\), Wilf lists a bunch of ways that 
+            generating functions can be useful.
+            The basic idea is "generating functions are useful for proving things," which is all the "real-world applicability"
+            that I need to hear.
+            But let's cut to the chase. What is a generating function?
+        </p>
+        <p class='def'><span class='def-name'>(Generating Function)</span>
+            A generating function \(f\) for a sequence \( (a_n)_{n=0}^\infty \) is a complex-valued function on \(\mathbb{C}\) so that 
+            \( f(x)=\sum_{n=0}^\infty a_n x^n \).
+        </p>
+        <p>
+            Here Wilf pulls the age-old trick of not specifying the domain of either \(f\) or \( (a_n)_n \). 
+            I believe the intent is to allow readers to specify the most general domain that they are comfortable with.
+            I'll attempt to keep intentional ambiguity to a minimum.
+            (But hey, we'll give Wilf a break; it's just the first chapter). EDIT: So it appears that it is standard 
+            to view \( f \) as a formal power series. Probably should have guessed this, but it won't matter for this introductory post.
+        </p>
+        <p>
+            The idea of a generating function is immediately attractive. 
+            After all, the much-revered "explicit form" \( a_n = f(n) \) for some hopefully well-behaved 
+            function \(f\) is a similar embedding of \( (a_n)_n \) into a function space.
+            It is often the case that \( f \) has an unusually short description, at least in the context of a first-year university
+            student's homework.
+            A generating function is a <i>non-trivial</i> embedding of \( (a_n)_n \) into a function space, which, if you 
+            know anything about power series, should at least feel more natural than the usual explicit form.
+            Indeed, since we know a power series is smooth within its radius of convergence, even relatively fast-growing sequences 
+            have smooth generating functions.
+            Moreover, power series in \( \mathbb{C} \) are holomorphic functions, and that is one heck of a place to land
+            for your back-of-the-napkin scribblings!
+            Right away we can see that this embedding is at the very least a group-homomorphism under addition.
+        </p>
+        <p>
+            Anyway, before getting into it (which, going by Wilf, is to jump into some examples), it's worth 
+            at least mentioning the origin of the power series.
+            To be precise, let's say \( \varphi_0((a_n)_n) \) is the "embedding" operator that yields the generating 
+            function \(f_0 \) for \((a_n)_n\) defined above.
+            Let \( \varphi_c((a_n)_n) \) yield the function \( f_c \) that satisfies 
+            \[ f_c(x)=\sum_{n=0}^\infty a_n (x-c)^n\,. \]
+            The question is whether \(f_c\) is any different than \(f_{c'}\), or whether \(c=0\) is canonical in some way.
+            A moment's thought (or maybe a little longer, if you're as slow as me) shows that this question does not contain a lot of content.
+            Any holomorphic function \(f\) is the embedding \(\varphi_0((a_n)_n) \) for some suitable sequence,
+            and since holomorphic functions form quite a broad class, we can't expect \(f_0\) and 
+            \(f_{c'}\) to be related other than being simple translates of each other.
+            Moreover, the relationship between \(f_0\) and \(f_c\) is so un-mysterious that it is clear that, convenience aside,
+            the choice of origin doesn't matter in the slightest. 
+        </p>
+        <p>
+            But while we're on the topic of complex analysis, we know that a generating function \(f=\varphi_0((a_n)_n)\) extends to a holomophic function 
+            on some domain \(D\subset\mathbb{C}\).
+            Say \((a_n)_n\sim (b_n)_n\) if there exists some \( z\in D \) so that \( f'=\varphi_z((b_n)_n) \) coincides with \(f \) within its disk 
+            of convergence.
+            By the identity principle, we know that \(f'=f\) so that \(\sim\) is an equivalence relation, and indeed complex sequences that grow sufficiently 
+            slowly have classes 
+            corresponding to the unique holomophic function which they describe(!).
+            Before I get lost in this rabbit hole (perhaps recalling some tidbit from my complex analysis days which makes this observation 
+            embarrassingly trivial), let's get a move-on to our first example.
+        </p>
+        <h3>Section 1.1</h3>
+        <p>
+            Wilf asks us to find an explicit form for the recurrence relation
+            \[ 
+                \begin{cases}
+                    a_{n+1} = 2a_n + 1 \\
+                    n\geq 0,\,\, a_0 = 0
+                \end{cases}\,.
+            \]
+            We are to suppose that \( f(x)=\sum_{n=0}^\infty a_n x^n \) converges when \(|x|&lt;r \) for sufficiently small, positive \(r\).
+            Wilf chooses to ignore convergence issues altogether
+            (probably because it won't be an issue with the introduction of formal power series), but it isn't 
+            particularly difficult to show that \(f\) converges (uniformly) on such a disk.
+            It is clear that \(a_n\) is non-negative for all \(n\), and in that case \( a_{n+1}\geq 3a_n \) whenever \( n\geq 1 \).
+            In particular, the sequence \( \{ b_0=1, \,\, b_{n+1}=3b_n \} \) is element-wise strictly greater than \( a_n \).
+            Since we know the explicit form of \( (b_n)_n \) to be \( b_n=3^n \), we can see for \( |x|&lt;1/6 \)
+            \[
+               \left|f(x)\right|= \left| \sum_{n=0}^\infty a_nx^n \right| \leq \sum_{n=0}^\infty \left|a_n\right|x^n \leq \sum_{n=0}^\infty (1/2)^n=2 \,.
+            \]
+            The way to proceed here is slightly tricky, but once you know it you won't forget:
+            \[
+                \begin{align*} 
+                    a_{n+1}=2a_n+1&\implies \sum_{n=0}^\infty a_{n+1}x^n=\sum_{n=0}^\infty (2a_n+1)x^n &\text{for all }|x|\text{ small} \\
+                        &\implies (1/x)\sum_{n=1}^\infty a_nx^n=2\sum_{n=0}^\infty a_nx^n + \sum_{n=0}^\infty x^n \\
+                        &\implies f(x)/x=2f(x)+1/(1-x) \\
+                        &\implies f(x)=\frac{x}{(1-x)(1-2x)}\,.
+                \end{align*}
+            \]
+            You can perhaps tell right away that all the convergence issues are not potent since we have an exponential bound for
+            \(a_n\).
+            Here, we just showed that if there is some sequence \((a_n)_n\) satisfying the aforementioned recurrence relation, AND if 
+            \(f\) is a well-defined and exists, then \( f(x)=\frac{x}{(1-x)(1-2x)} \).
+            Hence, we have found our generating function.
+        </p>
+        <p style='font-size:small'>
+            NB: Wilf, again deploying another masterful move, completely ignores the "issues" of whether \(f\) is well-defined or \((a_n)_n\)
+            exists. 
+            This is a genius move because 1) they are both true, and 2) Wilf doesn't have to simultaneously sound like an idiot 
+            and go over the heads of his readers by proving these two facts.
+        </p>
+        <p>
+            More manipulation reminiscent of your calc I (or intro complex analysis?) days provides a path to an explicit form:
+            \[
+                \begin{align*}
+                    \sum_{n=0}^\infty a_n x^n=f(x)=\frac{x}{(1-x)(1-2x)}&=x\left(\frac{-1}{1-x}+\frac{2}{1-2x}\right) \\
+                        &= -x\sum_{n=0}^\infty x^n + 2x\sum_{n=0}^\infty (2x)^n \\
+                        &= \sum_{n=1}^\infty (2^n-1)x^n\,.
+                \end{align*}
+            \]
+            Thus we have \( a_n = 2^n -1 \).
+        </p>
+        <h3>Discrete Convolution and Shift Operators</h3>
+        <p>
+            Now this calculation was not especially painful.
+            But before putting this to bed, I find it extremely instructive to "pull-back" 
+            operations done in some sort of dual space back to the origin space. 
+            This serves a few purposes. First it shows when a map to a dual space is not very deep.
+            This is the case when the pull-back operation is something you should have seen but didn't.
+            Secondly, it has the possibility of expanding your knowledge of the original space, by porting features 
+            of the dual space. Here, we will rediscover the discrete convolution and relate it to the "shift" operator.
+        </p>
+        <p>
+            Recall our first step above was a summation: \( a_{n+1}=2a_n+1\implies \sum_n a_{n+1}x^n=2\sum_n a_n x^n+\sum_n x^n \).
+            Broadly speaking, this doesn't really accomplish anything; it takes the implicit "for all \(n\)" contained in 
+            \( a_{n+1}=2a_n+1 \) and makes it explicit in a sum.
+            Instead, we can write our recurrence relation element-wise:
+            \[ \mathcal{L}(A)=2A+\mathbf{1}\,. \]
+            Here \(\mathcal{L}\) is the left-shift operator taking a sequence \(A=(a_0, a_1, a_2,\ldots) \) to 
+            \( (a_1,a_2,a_3,\ldots) \) and \( \mathbf{1} \) is the constant sequence \( (1,1,1,\ldots) \).
+            We take multiplication and addition to be element-wise.
+            (For a more formal methodology for this "pull-back", apply the map \( \sum_n a_n x^n\mapsto (a_0,a_1,\ldots) \) 
+            to both sides of each step.)
+            Keeping in mind what addition and scalar multiplication mean in \(\mathbb{C}^\infty\), we can 
+            rearrange and "factor" using a unique kind of convolution that we denote \(\star\):
+            \[
+                \begin{align*} 
+                \mathcal{L}(A)=2A+\mathbf{1} &\implies \mathcal{L}(A)-2A=\mathbf{1} \\
+                    &\implies A\star(-2,1,0,0,\ldots)=\mathbf{1}\,.
+                \end{align*}
+            \]
+            Our star operator (\(\star\)) satisfies \(A\star B=\sum_{n=0}^\infty b_n \mathcal{L}^{(n)}(A) \).
+            Unfortunately, \( \star\) is not associative, meaning we can't apply \((-2,1,0,0,\ldots)^{-1}\)
+            to both sides above (if such an inverse even existed).
+            To get a useful (i.e. associative) operator, we fall back to the wonderful (regular-old) discrete convolution.
+            Avoiding strenuous bookkeeping requires extending \(A\) and \(B\) to two-sided sequences:
+            \[
+                A=(\ldots, a_{-2}, a_{-1}, [a_0], a_1, a_2,\ldots) \\
+                B=(\ldots, b_{-2}, a_{-1}, [b_0], b_1, b_2,\ldots)\,.
+            \]
+            We surround the zero'th entry with brackets to distinguish its location.
+            Then the discrete convolution \(A\star B\) is defined 
+            \[(A\star B)_k = \sum_{n=-\infty}^\infty a_n b_{k-n}\,.\]
+            This operation is commutative and associative -- not to mention distributive over addition -- and we may 
+            rewrite \(\mathcal{L}(A)=2A+\mathbf{1}\) as 
+            \[
+                \begin{align*} 
+                    \mathcal{L}(A)-2A=\mathbf{1} &\iff (\ldots,0,[a_0],a_1,a_2,\ldots)\star (\ldots, 0, 1,[-2],0,\ldots)=(\ldots,0,[1],1,\ldots) \\
+                    &\iff A\star (\ldots, 0, 1,[-2],0,\ldots)=\mathbf{1}\,.
+                \end{align*}
+            \]
+            Since \(\star\) is distributive over addition, we can relate the left shift operator to convolution with \((\ldots,1,[0],0,\ldots)\) and 
+            scalar multiplication with \((\ldots,0,[\alpha],0,\ldots)\).
+            Then it's not too hard to construct at least this particular inverse:
+            \[(\ldots, 0, 1,[-2],0,\ldots)\star (\ldots,[0],1,2,4,8,\ldots)=(\ldots,0,0,[1],0,0,\ldots)\]
+            so that 
+            \[
+                \begin{align*} 
+                    a_k&=((\ldots,[1],1,\ldots)\star(\ldots,0,[0],1,2,4,\ldots))_k \\
+                        &= \sum_{n=0}^{k-1} 2^{k-n-1} = \sum_{n=0}^{k-1} 2^n \\
+                        &= 2^k - 1\,.
+                \end{align*}
+            \]
+            Interestingly, we encountered no convergence issues at all with this method.
+            In addition, the partial fraction decomposition completely vanished, though this is certainly
+            due to the explicit computation of the convolution-wise inverse. 
+            If instead we had expanded \(1/(1-2x)\) and \(1/(1-x)\) as power series we would have recovered a similar 
+            sum for \(a_k\) without the decomposition.
+        </p>
+        <p>
+            Much could be said about the above calculation; here are three starting points:
+            <ol>
+                <li>The need to expand \(A\) and \(B\) to two-sided infinite sequences is immediately 
+                    reminiscent of the expansion of a regular (holomorphic) power series into a (meromorphic) Laurent 
+                    series.
+                    Indeed, the expansion is necessary if one wishes to have a multiplicative inverse to \(x^k\).
+                </li>
+                <li>
+                    The duality of convolution on the discrete side with multiplication on the function side 
+                    is suspiciously similar to some convolution theorems in Fourier analysis. 
+                </li>
+                <li>
+                    What does partial fraction decomposition look like in terms of sequence convolution?
+                </li>
+            </ol>
+        </p>
+        <h3>Conclusion</h3>
+        For this simple example, the "generating function" method is friendly because the necessary manipulations
+        are familiar. 
+        The equivalent computation acting on the sequence itself is not more difficult.
+        Moreover, I find that the sequence version propels the mind more immediately than the generating function method.
+        Nonetheless, as Wilf acknowledges, this is a particularly simple example amenable to many methods.
+        We'll have to wait and see about the more subtle uses of generating functions.
+	</div>
+</body>
+</html>

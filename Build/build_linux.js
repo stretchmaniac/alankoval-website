@@ -43,9 +43,9 @@
 //    - url.txt
 
 // set this to false to build the official version, versus for testing purposes
-const developing = false;
+const developing = true;
 // set this to true to deploy the final version to amazon s3
-const deploy = true;
+const deploy = false;
 // for running command line args
 const shell = require('shelljs');
 // for manipulating HTML as a DOM
@@ -356,32 +356,24 @@ function copy(oldDir, oldName, newDir, newName){
 
 function constructPostLine(post, doc){
 	const html =
-	`<a class='post-line'>
-		<div class='post-line-image-container'>
-			<img class='post-line-image' src='img/lizard.png'>
-		</div>
-		<div class='post-line-words'>
-			<div class='post-line-title'>Example post</div>
-			<div class='post-line-description'>Well, I guess this is my first post. I'm Alan, by the way. I'm a <s>junior</s> senior
-			in high school. I do stuff, and I hope this doesn't run off the div.</div>
-			<div class='post-line-date'>6/11/2016 > Math</div>
-		</div>
-	</a>`;
+	`<div class='post-line'>
+		<a class='post-line-link'></a>
+		<div class='post-line-words'></div>
+	</div>`;
 
 	const container = doc.createElement('div');
 	container.innerHTML = html;
     const postObj = container.firstChild;
 
-    postObj.href = post.realUrl;
-	postObj.getElementsByClassName('post-line-title')[0].innerHTML = post.title;
-	postObj.getElementsByClassName('post-line-description')[0].innerHTML = post.description;
-	if(post.thumbnail && post.thumbnail.trim().length > 0){
-		postObj.getElementsByClassName('post-line-image')[0].src = post.thumbnail;
-	}else{
-		postObj.getElementsByClassName('post-line-image-container')[0].innerHTML = '';
-	}
-	postObj.getElementsByClassName('post-line-date')[0].innerHTML =
-		post.date + ' > ' + post.tags.split(' ').join(', ');
+	const aEl = postObj.getElementsByClassName('post-line-link')[0];
+	aEl.href = post.realUrl;
+	aEl.textContent = post.title;
+	postObj.getElementsByClassName('post-line-words')[0].innerHTML = 
+		post.date + ' > ' + 
+			post.tags.split(' ')
+			.map(s => '<span style="font-weight:bold">' + s + "</span>")
+			.join(', ');
+
     return postObj;
 }
 

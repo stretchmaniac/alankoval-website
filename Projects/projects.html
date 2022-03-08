@@ -5,6 +5,28 @@
 </head>
 <body>
 	<div style='padding:10px'>
+		<h1>Koval's 3D (Implicit) Grapher</h1>
+		<p>
+			<a href='https://alankoval.com/3dgrapher/src/index.html'>alankoval.com/3dgrapher/src/index.html</a> |
+			<a href='https://github.com/stretchmaniac/kovals-3d-grapher-5'>GitHub link</a>
+		</p>
+		<p>
+			Koval's 3D Grapher is a voxel-based, implicit surface and volume plotter in 3D targeted at webgl2.
+		</p>
+		<p>
+			Triangles embedded in 3D are not well suited for representing sets with "dimension" not equal to two. 
+			Furthermore, automatic and efficient triangulation is a significant challenge for a 3D plotter, 
+			especially in guaranteed-fail conditions like z = sin(1/x). For this version, we render our plot 
+			as binary (i.e. on/off) voxels in a 1024 x 1024 x 1024 grid.
+		</p>
+		<p>
+			The goal is to produce publication-quality renders of surfaces and volumes in the browser.
+			The rendering uses three-bounce ray tracing with standard light sampling and allows for custom (per voxel) color 
+			and normal specification. 
+		</p>
+		<p>
+			<img class='center' style='max-width:70%;margin-top:15px;margin-bottom:15px;' src='https://i.imgur.com/VRjpNdTh.png'>
+		</p>
 		<h1>Error Propagation Library</h1>
 		<p>
 			<a href='https://github.com/stretchmaniac/ErrorPropagation'>GitHub link</a>
@@ -21,13 +43,13 @@
 		<p>
 			This library allows arithmetic on arbitrary expressions. 
 		</p>
-		<h1>Koval's 3D Grapher</h1>
+		<h1>Koval's 3D Grapher (old)</h1>
 		<p>
-			<a href='https://alankoval.com/3dgrapher'>alankoval.com/3dgrapher</a> |
+			<a href='https://alankoval.com/3dgrapher-old/src/index.html'>alankoval.com/3dgrapher-old/src/index.html</a> |
 			<a href='https://github.com/stretchmaniac/kovals-3d-grapher'>GitHub link</a>
 		</p>
 		<p>
-			Koval's 3D Grapher is a WebGL accellerated function plotter in 3D. It has a few features:
+			Koval's 3D Grapher is a WebGL accelerated function plotter in 3D. It has a few features:
 			<ul>
 				<li>Support for Cartesian, spherical and cylindrical coordinate systems</li>
 				<li>Integrated parametric plotting</li>

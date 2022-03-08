@@ -212,8 +212,8 @@ function proceed(){
                     c.month = month;
                     c.day = day;
                     const toTimeString = (timeStr, isAM) => {
-                        const [hr, minute] = timeStr.split(':');
-                        const militaryHr = toMilitary(parseInt(hr), isAM) + '';
+                        let [hr, minute] = timeStr.split(':');
+                        let militaryHr = toMilitary(parseInt(hr), isAM) + '';
                         while(militaryHr.length < 2){ militaryHr = '0' + militaryHr; }
                         while(minute.length < 2){ minute = '0' + minute; }
                         return militaryHr + minute;
