@@ -128,6 +128,29 @@
             region before entering the purple region, pass over the purple region before entering the red region, and 
             finally pass over the red region before entering the green region, where it may terminate at the end pose.
         </p>
+        <p>
+            Provided that the dotted lines are perpendicular to the Dubins path in question, it is certainly true that 
+            the Dubins path contained in the blue region is the shortest Dubins path to start at the beginning pose and 
+            reach the yellow region, as the Dubins path contained in the green region is the shortest to start 
+            in the red region and reach the final pose. Likewise, the part of the Dubins path contained within the yellow region is a shortest Dubins path 
+            which starts in the blue region and reaches the purple region, as is the Dubins path contained in the red region.
+        </p>
+        <p>
+            Our proof would be complete (at least for the RSRSR case, though RSRSL, LSRSR and LSRSL are basically identical) if we showed 
+            that the Dubins path contained in the purple region, passing through the inner corner, is the shortest Dubins path from any point 
+            in the yellow region to any point in the red region.
+            Things get interesting here, because there are many different RSRSR paths passing through the inner corner, parameterized by 
+            the center of the arc of the second right turn. The figure below shows three of these configurations.
+        </p>
+        <div style='display:flex; flex-direction: row; justify-content: space-evenly;'>
+            <img src='dubins_corner/corner_param1.png' style='width:31%;'>
+            <img src='dubins_corner/corner_param2.png' style='width:31%;'>
+            <img src='dubins_corner/corner_param3.png' style='width:31%;'>
+        </div>
+        <p>
+            In the first and third images above, the blue path is clearly not the shortest between the yellow and red regions; a straight line 
+            would do better. The second is more convincing, but we'll need justification.
+        </p>
 	</div>
 </body>
 </html>
