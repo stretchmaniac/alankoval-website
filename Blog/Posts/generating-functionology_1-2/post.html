@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+	<meta name='dependencies' content='mathjax header-styles'>
+	<meta name='date' content='3/14/2022'>
+	<meta name='tags' content='Math'>
+	<meta name='url' content='gf-12.html'>
+	<meta name='title' content="Wilf's Generatingfunctionology: Section 1.2">
+	<meta name='description' content='Part 1.2'>
+	<meta name='thumbnail' content=''>
+	<meta name='identifier' content='da3908d9-ffdf-435b-a836-c0476ec57358'>
+</head>
+<body>
+	<div style='padding:25px; width:calc(100% - 50px)'>
+        <span class='info-font'>March 2022 > Math</span>
+        <h1>Wilf's Generatingfunctionology: Section 1.2</h1>
+        <span><a href='gf-11.html'>Section 1.1</a></span><br>
+        <span><a href='gf-13.html'>Section 1.3</a></span><br>
+        This is discussion on section 1.2. of Herbert S. Wilf's book <i>Generatingfunctionology</i>.
+
+        <p>
+            This section is a work-through of the following recurrence relation: 
+            \[
+                a_{n+1} = 2a_n + n \qquad \qquad a_0=1, n\geq 0\,.
+            \]
+            As with the previous section, we'll do it the "generating-function" way and then explore what 
+            the sequence space version looks like.
+        </p>
+        <p>
+            The principal difference between this calculation and the last one is a bit more technical difficulty.
+            Again, we take combine the set of recurrence relations \(\{a_{n+1}=2a_n+n:n\geq 0\}\) into a summation:
+            \[
+                \begin{align*}
+                    \sum_{n=0}^\infty a_{n+1}x^n &= \sum_{n=0}^\infty (2a_n+n)x^n \\
+                    &=2\sum_{n=0}^\infty a_nx^n + \sum_{n=0}^\infty nx^n\,.
+                \end{align*}
+            \]
+            Here we're using convergence of the sum \(\sum_{n=0}^\infty a_n x^n\), for some radius of convergence, which can be established 
+            easily enough by proving (inductively) the bound \(a_n \leq 3^n\).
+            For \(f(x)=\sum_{n=0}^\infty a_nx^n\), the left-hand side is \((f(x)-a_0)/x = (f(x)-1)/x\), and the right-hand side 
+            \(f(x)+\sum_{n=0}^\infty nx^n\).
+            The last sum is fairly common. Wilf uses the usual derivative trick, but to avoid the excess machinery 
+            (I would feel compelled to bring up the relevant theorem regarding differentiation of infinite sums),
+            I will do it with more elementary tools:
+            \[
+                \begin{align*} 
+                    \sum_{n=0}^N nx^n = \sum_{n=1}^N nx^n &= \sum_{n=1}^N \sum_{m=1}^n x^n \\
+                    &= \sum_{m=1}^N \sum_{n=m}^N x^n \\
+                    &= \sum_{m=1}^N \frac{x^{N+1}-x^m}{1-x} = \frac{Nx^{N+1}}{1-x}-\frac{1}{1-x}\sum_{m=1}^N x^m\,.
+                \end{align*}
+            \]
+            Thus 
+            \[
+                \sum_{n=0}^\infty nx^n=\lim_{N\to\infty} \left(\frac{Nx^{N+1}}{1-x}-\frac{1}{1-x}\sum_{m=1}^N x^m\right)=\frac{x}{(1-x)^2}\,.
+            \]
+        </p>
+        <p>
+            With this, our original recurrence sum turns into \((f(x)-1)/x = 2f(x)+x/(1-x)^2\). 
+            Solving for \(f\) yields the generating function for \(a_n\):
+            \[ 
+                f(x)=\frac{1-2x+2x^2}{(1-x)^2(1-2x)} = \frac{-1}{(1-x)^2} + \frac{2}{1-2x}\,.
+            \]
+            In case you need a quick refresher, here's the justification for the "quick way" that Wilf mentions for partial 
+            fraction decomposition:
+        </p>
+        <p>
+            \(f(x)\) is meromorphic on \(\mathbb{C}\) with poles at \(x=1\) and \(x=1/2\), of degree 1 and 2, respectively.
+            If we can remove poles of \(f\) by subtracting a function \(g\) such that \(\lim_{z\to\infty} g(z)=0\), then 
+            \(f-g\) is a bounded entire function by Liouville.
+            Since \(\lim_{z\to\infty} f(z)-g(z)=0\), we would have \(f=g\). 
+            It is easy to do this when we express \(f\) as a Laurent series.
+            Indeed, the usual residue calculations yield
+            \[ 
+                \begin{align*}
+                    f(x)&=\frac{-1}{(x-1)^2}+\frac{0}{x-1}+\ldots \\
+                    f(x)&=\frac{-1}{x-1/2}+\ldots
+                \end{align*}
+            \]
+            so that \(f(x)=g(x)=\frac{-1}{(x-1)^2}-\frac{1}{x-1/2} \).
+        </p>
+        <p>
+            After this, we write 
+            \[
+                \begin{align*} 
+                    f(x)&= \frac{-1}{(1-x)^2} + \frac{2}{1-2x} \\
+                    &= -\sum_{n=0}^\infty (n+1)x^n + 2\sum_{n=0}^\infty (2x)^n &\text{First sum from above} \\
+                    &= \sum_{n=0}^\infty x^n(2^{n+1}-n-1)\,.
+                \end{align*}
+            \]
+            We have then recovered our series expression, \(a_n=2^{n+1}-n-1\).
+        </p>
+        <p>
+            Next, we'll consider the "sequence space" method. 
+            See <a href="alankoval.com/gf-11.html">section 1.1</a> for the full exposition on this method.
+            Let \(A=(\ldots,0,0,[a_0],a_1,a_2,\ldots)\) be the sequence in question (recall from part 1.1 that we 
+            use brackets [] to distinguish the zero'th element of the bidirectionally-infinite series \(A\)).
+            Then the relation \(a_{n+1}=2a_n+n\) becomes 
+            \[
+                \mathcal{L}(A) = 2A+(\ldots,0,1,[0],1,2,3,\ldots)\,.
+            \]
+            Here the 1 to the left of [0] is to deal with the 0th element of \(A\), which instead of being cut-off by the left-shift 
+            operator (as we might wish) is shifted to the -1 position instead.
+            Rearranging, we have 
+            \[
+                \mathcal{L}(A)-2A=(\ldots,0,1,[0],1,2,3,\ldots) \iff A\star (\ldots, 1, [-2], 0,\ldots)=(\ldots,0,1,[0],1,2,3,\ldots)\,.
+            \]
+            In our last post, we computed the convolution-inverse \((\ldots, 1,[-2],0,\ldots)^{-1}=(\ldots,[0],1,2,4,\ldots)\)
+            so that
+            \[
+                A=(\ldots,0,1,[0],1,2,3,\ldots)\star (\ldots,[0],1,2,4,\ldots)
+            \]
+            and 
+            \[
+                \begin{align*}
+                    a_k&=2^{k}+\sum_{n=0}^{k-1} n 2^{k-n-1} \\
+                    &=2^k + 2^{k-1}\sum_{n=0}^{k-1}n (1/2)^n \\
+                    &=2^k+2^k-k-1 = 2^{k+1}-k-1\,.
+                \end{align*}
+            \]
+            Here we used our expression for \(\sum_{n=0}^N nx^n\) found above.
+        </p>
+        <p>
+            Curiously, the sequence version only goes beyond the problem in section 1.1 in the form of \(\sum_{n=0}^N nx^n\).
+            The generating-function method requires this and an additional partial fraction decomposition.
+        </p>
+	</div>
+</body>
+</html>

@@ -110,6 +110,14 @@ body{
     margin-right: 5px;
     font-weight: bold;
 }
+.theorem {
+    font-style: italic;
+}
+.theorem::before {
+    content: "Theorem.";
+    margin-right: 5px;
+    font-weight: bold;
+}
 
 .different{
     width:calc(100% - 50px);

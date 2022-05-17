@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+	<meta name='dependencies' content='mathjax header-styles'>
+	<meta name='date' content='5/15/2022'>
+	<meta name='tags' content='Math'>
+	<meta name='url' content='dubins1.html'>
+	<meta name='title' content="Dubins Corner Revisited">
+	<meta name='description' content=''>
+	<meta name='thumbnail' content=''>
+	<meta name='identifier' content='dubins_corner'>
+</head>
+<body>
+	<div style='padding:25px; width:calc(100% - 50px)'>
+        <span class='info-font'>May 2022 > Math</span>
+        <h1>Dubins Corner Revisited</h1>
+        <p>
+            There is a subfield in robotics that concerns itself with so-called "non-holonomic motion planning."
+            Motion planning is essentially the study of how to get robots from point A to point B in an environment, 
+            with the "non-holonomic" descriptor targeting robots that have non-trivial motion rules.
+        </p>
+        <p>
+            For example, you might wish for an RC car to correctly traverse a maze.
+            A solution &mdash; that is, a set of movements for the RC car &mdash; must not only "solve" the maze 
+            in the conventional sense, but do so in a way that respects the car's inability to move sideways (for example).
+            An RC car is non-holonomic since its direction of movement is not completely free; it depends on what 
+            direction the car is facing.
+        </p>
+        <p>
+            There is a further subfield of non-holonomic motion planning that restricts itself to the motion planning of an 
+            idealized robot called the "Dubins Car". 
+            Named after the mathematician Lester Dubins, this is a robot that traverses \(C^1\) (and almost-everywhere \(C^2\)) paths of the form
+            \[ \left\{L(t):\mathbb{R}\to \mathbb{R}^2:|L'(t)|=1\text{ and } |L''(t)|\leq 1 \right\}\,. \]
+            This is a point robot constantly moving forward, having a minimum turning radius of 1. 
+            Dubins' original 1957 paper detailed the optimal trajectory of such a robot to minimize the total distance traveled between 
+            two "poses," an initial pose \( (p_i, \theta_i) \) and final pose \( (p_f, \theta_f) \), each 
+            giving the position \(p \in\mathbb{R}^2\) and orientation \(\theta\in [0,2\pi)\) of the robot.
+            Dubins' results can be (inexhaustibly) summarized:
+            <ol>
+                <li>The robot should either go straight or turn with radius 1 always. In other words, \( |L''(t)|\in \{0,1\} \).</li>
+                <li>The optimal path between poses (with no external obstacles) consists of no more than three segments, with 
+                    each segment either straight (S), a right turn (R), or a left turn (L).
+                    It is common to refer to these paths by their constituent parts.
+                    A "RSL" path, for example, consists of first a right turn (of minimal radius of course), followed by a straight 
+                    section, and finally a left turn.
+                </li>
+                <li>Only paths of the form LRL, RLR, LSR, RSL, RSR and LSL can be optimal, up to degeneracy.</li>
+            </ol>
+            Since 1957, there has been a steady supply of new papers in the niche subfield.
+            The typical paper that I have seen falls into the following categories:
+            <ol>
+                <li>Extensions of Dubins results. Some of these are the most well known, including the 
+                    <a href='https://scholarsarchive.byu.edu/facpub/1900/'>Dubins Airplane</a>, and
+                    the <a href='https://msp.org/pjm/1990/145-2/p06.xhtml'>Reeds-Shepp Car</a>.
+                    Other extensions allow a range of initial/final poses, for example.
+                </li>
+                <li>Different proofs of Dubins' original result. There are surprisingly many of these.</li>
+                <li>Algorithms for approximating shortest paths in the presence of obstacles. This is by far 
+                    the most popular, since it is most topical to the end goal of motion planners.
+                </li>
+            </ol>
+        </p>
+        <p>
+            Why do I know (or care) about Dubins cars? Back at university, I joined the robotics lab 
+            <a href='https://rsn.umn.edu/'>RSN</a> at UMN on a summer REU.
+            Being somewhat uninterested in robotics, Dubins path planning was most palatable since I could study it
+            almost exclusively as a math problem.
+            Thus I spent the summer of 2018 developing what I can only describe as a particularly inelegant proof of the optimality 
+            of a certain class of paths for a Dubins car turning a corner, as if in a hallway 
+            (perhaps undeservedly accepted to ICRA 2019, free access <a href='https://conservancy.umn.edu/bitstream/handle/11299/216038/19-005.pdf?sequence=1'>here</a>).
+            Although much work has been done approximating optimal Dubins paths with obstacles, few papers have attempted to find explicit solutions 
+            for prototypical examples.
+        </p>
+        <p>
+            As evinced by the length and complexity of my paper, I concluded that such explicit solutions were, by and large, 
+            difficult.
+            However, lately I have come across a much simpler proof which I will show here.
+        </p>
+        <h2>The Dubins Corner Problem</h2>
+        <p>
+            <img src='dubins_corner/corner_diagram.png' style='width:50%; margin-left:auto;display:block;margin-right:auto;'>
+            The problem is to find the shortest Dubins path from \(p_i\) to \(p_f\) around an interior corner 
+            with angle \(\varphi\) (as in the above diagram).
+            The solution in most cases is rather predictable, consisting of two three-segment Dubins paths joined at the inner corner.
+            These paths are in the form RSRSR, RSRSL, LSRSR, and LSRSL, and may in general be parameterized by the angle made at 
+            the inner corner.
+            I've included a diagram below for a 90 degree corner, to show you how simple this is. (This is an RSRSR path).
+            <img src='dubins_corner/corner_solution_1.png' style='width:30%; margin-left:auto;display:block;margin-right:auto;'>
+        </p>
+        <p>
+            Please note that my paper also includes some "outer walls" of the hallway, among other features.
+            I have found these to be primarily clutter that distracts from the main problem I wish to exhibit. 
+            However, the outer walls do contribute to the solution in some cases and are of some interest. 
+            Perhaps I will address them later.
+        </p>
+        <p>
+            My paper made the following claim, slightly abridged for clarity: 
+        </p>
+        <p class='theorem'><span class='def-name'>(Alan's Theorem)</span>
+            If there exists any RSRSR, RSRSL, LSRSR or LSRSL path from \(p_i\) to \(p_f\) with middle R segment passing through the inner corner, then 
+            the optimal solution is either an elementary Dubins path from \(p_i\) to \(p_f\), OR an RSRSR, RSRSL, LSRSR or LSRSL path.
+        </p>
+        <p>
+            Here an "elementary Dubins path" is one of the three-segment paths originally formulated by Dubins to be optimal on the plane.
+        </p>
+        <h2>The New Proof</h2>
+        <p>
+            The main idea is that the class of optimal solutions {RSRSR, RSRSL, LSRSR, LSRSL} corresponds to
+            a greedy-choice path planning through carefully chosen regions around the corner.
+            The method is relatively simple: 
+            <ol>
+                <li>Choose four lines that partition the corner into five disjoint regions so that any path 
+                    must traverse the regions in order (see diagram below). 
+                </li>
+                <li>
+                    Find the minimal-length Dubins path between successive lines.
+                </li>
+                <li>
+                    Show that the optimal RSRSR, RSRSL, LSRSR and LSRSL paths consist of the locally-shortest paths
+                    constructed in (2).
+                </li>
+            </ol>
+            The trick, of course, is to choose these regions to coincide with the Dubins path that we expect.
+            <img src='dubins_corner/line_diagram.png' style='width:80%; margin-left:auto;display:block;margin-right:auto;'>
+            The above image (credit to Geogebra for diagram creation) shows five regions within the available environment: blue, 
+            yellow, purple, red and green. 
+            Clearly, a Dubins path (blue line) must pass over the blue region before entering the yellow region, pass over the yellow 
+            region before entering the purple region, pass over the purple region before entering the red region, and 
+            finally pass over the red region before entering the green region, where it may terminate at the end pose.
+        </p>
+	</div>
+</body>
+</html>
