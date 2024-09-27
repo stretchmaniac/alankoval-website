@@ -1,1 +1,3 @@
 Build/result/*
+.vscode
+Build/node_modules

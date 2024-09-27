@@ -280,7 +280,7 @@ function buildPage(contentPath, newPath, postData, onFinish = ()=>{}){
 				pageDoc.head.appendChild(newEl);
 			}
 
-			if(postData){
+			if(postData && false){
 				// include the discus thread at the bottom
 				const divWrapper = pageDoc.createElement('div');
 				divWrapper.className = 'padding';

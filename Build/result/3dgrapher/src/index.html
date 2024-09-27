@@ -29,9 +29,9 @@ float evaluate(vec3 p){
     return 0.8 - length(p) -1.0 + abs(p.x) + abs(p.y) + abs(p.z);
 }</div> <br>
             <select id='example-plot-select' onchange='exampleSelected();'>
-                <option value='1'>Example 1</option>
-                <option value='2'>Example 2</option>
-                <option value='3'>Example 3</option>
+                <option value='1'>Octahedral Star</option>
+                <option value='3'>Random Blob</option>
+                <option value='2'>Gyroid Approximation</option>
                 <option value='thread'>Thin Example</option>
                 <option value='cylindrical'>Cylindrical Example</option>
                 <option value='spherical'>Spherical Example</option>
@@ -40,6 +40,7 @@ float evaluate(vec3 p){
                 <option value='moms-favorite'>Mom's Favorite</option>
                 <option value='klein-bottle'>Klein Bottle</option>
                 <option value='discontinuous'>Discontinuous Example</option>
+                <option value='eclectic'>Fun Looking Thing</option>
             </select>
             <button id='plot-button' onclick='plotClicked();'>Plot</button>
             <button id='pause-plotting' onclick='pauseClicked();'>Pause</button>
@@ -48,9 +49,9 @@ float evaluate(vec3 p){
             <div id='stats-container'>
                 <div id='ssp-stat'></div>
             </div>
-            <span style='font-size: 12px'>Toggle plot pause/resume hotkey: p</span>
+            <span style='font-size: 12px'>Toggle plot pause/resume hotkey: alt-p</span>
             <br>
-            <a href="javascript: alert('This application runs on your GPU through webGL2. If your graphics card is not up to the task, or your function is complicated, plotting may briefly (or not so briefly!) freeze your entire computer, including your mouse. In the event that this happens, press the p key ONCE and go make yourself a cup of coffee. Maybe it will be un-frozen by the time you get back. Please also note that your specific graphics driver may impact performance substantially, especially shader compile times.');" style='font-size: 12px'>Will this crash my computer?</a>
+            <a href="javascript: alert('This application runs on your GPU through webGL2. If your graphics card is not up to the task, or your function is complicated, plotting may briefly (or not so briefly!) freeze your entire computer, including your mouse. In the event that this happens, press alt-p ONCE and go make yourself a cup of coffee. Maybe it will be un-frozen by the time you get back. Please also note that your specific graphics driver may impact performance substantially, especially shader compile times.');" style='font-size: 12px'>Will this crash my computer?</a>
             <br>
             <br>
             Color evaluation function <br>

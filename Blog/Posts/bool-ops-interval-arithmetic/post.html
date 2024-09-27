@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+	<meta name='dependencies' content='mathjax header-styles prism'>
+	<meta name='date' content='7/27/2024'>
+	<meta name='tags' content='Math Algorithms'>
+	<meta name='url' content='boolops-interval-arithmetic.html'>
+	<meta name='title' content='I. Interval Arithmetic'>
+	<meta name='description' content=''>
+	<meta name='thumbnail' content=''>
+	<meta name='identifier' content='bool_ops_ia'>
+</head>
+<body>
+	<div style='padding:25px; width:calc(100% - 50px)'>
+        <span class='info-font'>July 2024 > Math, Algorithms</span>
+        <h1>I. Interval Arithmetic</h1>
+        <p>
+            This is part I of the series <a href="boolops.html">A Practical Guide to Boolean Operations on Triangle Meshes</a>.
+        </p>
+        <p>
+            A friend recently introduced me to a home-spun variant of <a href="https://en.wikipedia.org/wiki/Four_square">four square</a> which he called "Thrombus" ("three-rhombus").
+            Among other changes, Thrombus introduces no-fault line hits: if the ball hits a line between two players, then either player may play the ball legally, and if no player hits the ball, no one is out.
+            This rule has interesting implications for gameplay, but one thing that it <em>doesn't</em> do is alleviate the fundamental perception issue about agreeing in what region the ball landed in.
+        </p>
+        <div style="width:100%; display:flex; align-items: center; flex-direction:column;">
+            <img src="bool_ops_ia/four_square_ex.png" style="width:50%"/>
+            <div style="font-size: smaller; width:60%">
+                Figure 1: A zoomed-in view of a four-square court, centered on the line separating two players.
+                Player A's region is in blue, to the left, with player B's region in red, to the right.
+                The middle region is "the line," having non-zero thickness.
+            </div>
+        </div>
+        <p>
+            Figure 1 shows a zoomed-in view of the boundary between two players, with player A on the left, player B on the right, and the line (having thickness, unshaded) in the middle.
+            Human perception is limited, especially from a distance, so no player can perfectly accurately gauge where the ball lands at every given bounce. 
+            Supposing that a player's vision is accurate up to \(\epsilon\) &mdash; that is, if a player sees the ball land at a particular spot, the ball <em>actually</em> landed within \(\epsilon\) of the spot &mdash; there are fundamentally ambiguous regions in which the ball may land.
+            These are shaded in green in Figure 1, and indicate a location where players may disagree about what region the ball lands in (player A's region, the line, or player B's region).
+        </p>
+        <p>
+            These ambiguous regions are theoretically game breaking, even if in practice it is not so.
+            Even if all players agree that the ball landed in player A's region, they may all be wrong, leading to dramatically different game results.
+            Players may be at odds with each other, each believing the ball landed in a different region, without much (fair) recourse to settle their dispute.
+            Even if we imagine some fancy video-replay system, there is still some error in measuring the exact location of the ball's bounce.
+            So while the frequency of disputed plays may be significantly lessened (think the green region in Figure 1 becoming narrower and narrower), there remains a non-zero probability of the ball bouncing in an ambiguous region.
+        </p>
+        <p>
+            This is basically the problem of doing geometry with finite-precision floating point numbers.
+            You have some input numbers which are transformed in some way to produce an output.
+            This transformation generates <em>floating point error</em> in the result.
+            Our goal is to classify the result into discrete outcomes and make a decision based on the outcome.
+            But since we can only rarely guarantee zero floating point error, the odds of making a potentially algorithm-ending mistake are non-zero. 
+            Just as implementing video replay in four square only reduces the likelihood of an ambiguous ball spot, increasing the precision of floating point numbers (using more digits to represent each number) only reduces the likelihood of an incorrect outcome assignment. 
+        </p>
+        <p>
+            This "likelihood of incorrect outcome assignment" is not something that we can easily quantify and make sufficiently small (as in the case of <a href="https://en.wikipedia.org/wiki/Universally_unique_identifier">UUIDs</a>).
+            In the context of the wider boolean operations algorithm, it comes down to the exact coordinates of each triangle in the input meshes.
+            This is outside of our control, and in my experience trying to guess the distribution of input meshes provided by a user is a recipe for disaster.
+            It is generally very easy to come up with reasonable(ish) meshes that result in incorrect outcome assignments for most common geometric tests for any reasonable precision.
+        </p>
+        <h3>An Example: Side-of-Plane Test</h3>
+        <p>
+            The following problem is ubiquitous in computational geometry.
+            Given three non-colinear points \(a\), \(b\), \(c\) defining an oriented plane, determine if a fourth point \(x\) (1) lies on the plane, (2) lies on the positive side of the plane, or (3) lies on the negative side of the plane.
+        </p>
+        <div style="width:100%; display:flex; flex-direction: column; align-items: center;">
+            <img src="bool_ops_ia/side_of_plane.png" style="width:50%"/>
+            <div style="width:60%;">
+                Three non-colinear points \(a\), \(b\) and \(c\) define a plane in 3D.
+                The plane receives an oriented normal vector with direction \(n=(b-a)\times (c-a)\).
+                We want to know whether \(x\) lies on the plane, \(x\) lies on the side of the plane which \(n\) points toward, or \(x\) lies on the side of the plane which \(n\) points away from.
+            </div>
+        </div>
+        <p>
+            Depending on how smart you want to appear to your friends, you can generate a scalar result quantity \(d\) in several equivalent ways:
+            <ol>
+                <li>By noting that the sign of volume of the oriented parallelpiped formed by \(b-a\), \(c-a\), and \(x-a\) will give us our answer: \(d=\text{det}\left(\begin{bmatrix}b-a& c-a& x-a\end{bmatrix}\right)\)</li>
+                <li>By remembering the triple product in 3D: \(d=(x-a)\cdot ((b-a)\times (c-a))\)</li>
+                <li>By re-deriving the triple product using the oriented normal \(n=(b-a)\times (c-a)\) and running the orientation test \(d=(x-a)\cdot n\)</li>
+            </ol>
+            In any case, we transform \(a\), \(b\), \(c\) and \(x\) into a result \(d\).
+            Then we generate a discrete outcome from \(d\) in the following manner:
+            \[ \text{outcome}(d)=\begin{cases} 
+                    \text{on plane}&\text{if } d = 0 \\
+                    \text{positive side}&\text{if } d &gt; 0 \\
+                    \text{negative side}&\text{if } d &lt; 0
+                \end{cases}\,.\]
+            According to our characterization of floating point error, there should be values of \(a\), \(b\), \(c\) and \(x\) which produce an incorrect outcome if \(d\) is computed with finite precision.
+            Here's one:
+        </p>
+        <pre style="height:550px">
+<code class="language-cpp">#include &lt;array&gt;
+#include &lt;iostream&gt;
+
+using vec = std::array&lt;float, 3&gt;;
+float dot(const vec&amp; v1, const vec&amp; v2);
+vec cross(const vec&amp; v1, const vec&amp; v2);
+vec sub(const vec&amp; v1, const vec&amp; v2);
+
+int main(){
+    // Plane is {(x,y,z) : x + y - 2z = 0}
+    const vec a = {1.0f, 1.0f, 1.0f};
+    const vec b = {-1.0f, -1.0f, -1.0f};
+    const vec c = {1.0f, -1.0f, 0.0f};
+
+    // x + y - 2z is -2e-10 here, not zero!
+    const vec x = {0.0f, 0.0f, 1e-10f};
+
+    // d = (x - a) . ((b - a) x (c - a))
+    const float d = dot(sub(x, a), cross(sub(b, a), sub(c, a)));
+
+    // Our math says that d should not be zero, but floating point arithmetic says otherwise
+    std::cout &lt;&lt; (d == 0.0f ? "d is zero" : "d is non-zero") &lt;&lt; std::endl;
+
+    // Prints "d is zero"
+
+    return 0;
+}
+
+float dot(const vec&amp; v1, const vec&amp; v2){
+    return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
+}
+
+vec cross(const vec&amp; v1, const vec&amp; v2){
+    return {
+        v1[1] * v2[2] - v1[2] * v2[1],
+        v1[2] * v2[0] - v1[0] * v2[2],
+        v1[0] * v2[1] - v1[1] * v2[0]
+    };
+}
+
+vec sub(const vec&amp; v1, const vec&amp; v2){
+    return {v1[0] - v2[0], v1[1] - v2[1], v1[2] - v2[2]};
+}</code>
+        </pre>
+        <h3>Error Estimation</h3>
+        <p>
+            Geometric tests such as the "side-of-plane" test in the previous section are sometimes called <em>Geometric Predicates</em>.
+            There are relatively straight-forward ways of computing geometric predicates exactly (we'll cover that in another post), but the main issue is that they are very slow.
+            What we can do cheaply is estimate the error associated with floating point arithmetic.
+            Just as in four square, where most of the time everyone can tell that a ball lands in a particular square, most of the time conventional float math will give us the right answer.
+            With error estimation, we can check whether our inputs are in the "problem area" where floating point arithmetic may make a mistake.
+            In fact, there is essentially only one workflow that everyone uses to reliably compute geometric predicates:
+            <ol>
+                <li>Compute the predicate outcome using standard, hardware-implemented floating point arithmetic.</li>
+                <li>Conservatively estimate the error of step (1).</li>
+                <li>If the arithmetic error is large enough to possibly affect the result of (1), then go to step (1) with increased precision, OR compute the predicate exactly using other means.</li>
+            </ol>
+            In our previous example (side of plane test), we compute a value \(d\) whose sign tells us which side of the plane \(x\) is on.
+            With error estimate \(\epsilon\) communicating that the theoretical exact value of \(d\) is at most \(\epsilon\)-away from the floating-point calculated value of \(d\), we can conclude that any value of \(d\) found to be within \(\epsilon\) of zero is unreliable.
+            Said another way, our predicate outcome is reliable if \(\{\text{outcome}(d'):d'\in[d-\epsilon,d+\epsilon]\}\) contains only one outcome.
+            If we find our value of \(d\) is unreliable, then we resort to other methods (or increased precision).
+        </p>
+        <p>
+            Typically, it is rare (\(&lt; 0.1\%\)) that floating point arithmetic is not good enough.
+            We have a vested interest, then, in keeping step (2) as speedy as possible.
+            There are a bunch of methods of error tracking, some more complex than others.
+            But it is difficult to beat the simplicity and flexibility of interval arithmetic, discussed in the next section. 
+            In the case of addition, we can use SIMD instructions to perform interval arithmetic error estimation without any performance hit.
+            Other operations have fixed overhead irrespective of the complexity of the hardware instruction, again using SIMD.
+        </p>
+        <p>
+            I should mention that not everyone thinks that reliable geometric predicates are necessary.
+            There is an interesting class of algorithms which produce consistent but possibly invalid results based on unreliable floating point arithmetic, see <a href="http://users.math.uoc.gr/~mkaravel/files/EuroCG06Proc.pdf#page=225">A Topologically Robust Boolean Algorithm Using Approximate Arithmetic</a> for example.
+            In this paper, they apply a "data smoothing process" to eliminate invalid results.
+            Ultimately, while interesting, these methods are fundamentally more difficult to reason with because the core algorithms at play aren't 100% reliable.
+            Since they require some post-processing at least (which is very difficult to do robustly), it seems to me unlikely to have much performance benefits.
+        </p>
+        <h3>Interval Arithmetic Basics</h3>
+        <p>
+            The result of a floating point calculation has associated error.
+            Instead of representing the error by some radius \(\epsilon\) as in our side-of-plane example, we calculate bounds \([m, M]\) composed of floating point numbers \(m\) and \(M\) so that the true, mathematically exact result of the calculation lies in the interval \([m,M]\), taken as exact real numbers.
+            For example, there is no floating point number that is exactly equal to \(1+10^{-20}\); instead we substitute the interval \([1,\text{nextFloat}(1)]\) for the result.
+            When we do further calculations, we are applying operations between intervals, not floating point numbers.
+            So 
+            \[[1,2]+[3,4]\]
+            should be the smallest interval containing any number \(z=x+y\), where \(x\in[1,2]\) and \(y\in[3,4]\).
+            The minimum possible sum is \(1+3=4\), and the maximum possible sum is \(2+4=6\), so the resulting interval is \([4,6]\).
+        </p>
+        <p>
+            The simplest way to go about this to exploit IEEE floating point rounding rules together with \(\text{nextFloat}\) and \(\text{prevFloat}\) functions.
+            In this scheme, 
+            \[[a,b] + [c,d] = [\text{prevFloat}(a \oplus c), \text{nextFloat}(b \oplus d)]\,.\]
+            Here we use "\(\oplus\)" to refer to the floating-point arithmetic operation to avoid ambiguity.
+            According to the IEEE standard for nearest-rounding (the default option), \(a \oplus c\) is always the nearest floating-point representable value to the mathematical exact value of \(a+c\).
+            Thus \(a+c\) is always larger than the float immediately smaller than \(a\oplus c\) and smaller than the float immediately larger than \(a\oplus c\), equal to \(\text{prevFloat}(a\oplus c)\) and \(\text{nextFloat}(a\oplus c)\) respectively.
+            Similarly, \(b+d\) (the theoretical maximum of the resulting interval) is smaller than \(\text{nextFloat}(b\oplus d)\).
+            Since \(a\oplus c \leq b\oplus d\) when \(a\leq b\) and \(b\leq d\) (this would violate nearest-rounding rules otherwise), we can safely use \(\text{prevFloat}(a\oplus c)\) and \(\text{nextFloat}(b\oplus d)\) as the bounds of our resulting interval.
+        </p>
+        <p>
+            There is, however, a better way to go about this, which I first learned about from the 2008 paper <a href="https://frederic.goualard.net/publications/interval-sse2_goualard_para08.pdf">Fast and Correct SIMD Algorithms for Interval Arithmetic</a>.
+            We can avoid using \(\text{nextFloat}\) or \(\text{prevFloat}\) for addition entirely by setting the rounding mode to "upward" (towards \(+\infty\)).
+            Then
+            \[ [a,b] + [c,d] = [-((-a)\oplus (-c)), b\oplus d]\,. \]
+            Clearly, \(b\oplus d\) is an upper bound for \(b+d\) because of our selected rounded mode.
+            For the minimum bound, note that \((-a) \oplus (-c)\leq (-a) + (-c)\) from our rounding mode.
+            Multiplying both sides by \(-1\) results in \(-((-a)\oplus (-c))\geq -((-a)+(-c))=a+c\).
+            By storing the <em>negation</em> \(-m\) of an interval \([-m,M]\), this addition operation is extra simple:
+            \[ [-a,b] + [-c,d] = [-(a \oplus c), b \oplus d]=[(-a)\oplus (-c), b\oplus d]\,. \]
+            By storing an interval \([-a,b]\) in parallel in a SIMD expanded type, the interval addition is a single instruction, yielding identical runtime to native floating point addition. 
+        </p>
+        <h3>SIMD Interval Arithmetic in C++</h3>
+        <p>
+            We will be outlining an SIMD interval arithmetic library for Intel processors with at least SSE2 support.
+            This means we'll be using <a href="https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#">Intel intrinsics</a>.
+        </p>
+        <p>
+            Our basic interval unit will be a 4-float wide <code>__m128</code> type.
+            This can either hold a single interval <code>[-a, b, _, _]</code> with the last two slots unused, or two intervals in parallel <code>[-a, b, -c, d]</code>.
+            Each interval slot contains in the first lane the negation of the minimum bound, and in the second lane the maximum bound.
+            We assume the system adheres to the IEEE 754 standard, and if <code>NaN</code> (signaling or not) or <code>+/-Infinity</code> appears anywhere in an interval, the interval is assumed to represent the entire number line \(\mathbb{R}\). 
+            If <code>NaN</code> and <code>+/-Infinity</code> are <strong>not</strong> present, an interval <code>[-a, b, -c, d]</code> must have \(a\leq b\) and (if a parallel interval) \(c\leq d\).
+        </p>
+        <p>
+            Some notes:
+            <ul>
+                <li>A 128-bit wide register is the minimum size for interval division to use only one <code>div</code> instruction. If more parallelism is necessary this can be expanded to AVX 256-bit registers without much difficulty, though AVX intrinsics such as <code>_mm256_permute_ps</code> typically have 128-bit lane restrictions.</li>
+                <li>The IEEE 754 standard is only important insofar as <a href="https://www.cs.uaf.edu/2011/fall/cs301/lecture/11_09_weird_floats.html">operation tables</a> for non-finite numbers are correct, and the relevant math instructions are accurate up to 1ulp and correctly rounded.</li>
+                <li>Many interval arithmetic libraries include positive and negative infinity as valid values, so that \([-\infty, 0]\) and \([1,\infty]\) are disjoint intervals for example. They might also support empty intervals \(\varnothing\). While this is admirably complete, it introduces a ton of branching into simple operations. This overhead is excessive for functionality that is only borderline useful; when evaluating geometric predicates anything involving infinity likely means we'll have to redo the calculation using exact arithmetic anyway.</li>
+            </ul>
+        </p>
+        <details>
+            <summary>Addition</summary>
+            <p>
+                <pre><code class="language-cpp">inline __m128 add(const __m128 a, const __m128 b){
+    return _mm_add_ps(a, b);
+}</code></pre>
+                See discussion in "Interval Arithmetic Basics" section.
+                The intrinsic <code>_mm_add_ps</code> adds two four-lane SSE registers as floating point numbers.
+            </p>
+            <details>
+                <summary>Finiteness and well-formed conditions</summary>
+                <p>
+                    <ol>
+                        <li>If <code>a</code> or <code>b</code> is non-finite, then the result is non-finite.
+                        This follows from the <a href="https://www.cs.uaf.edu/2011/fall/cs301/lecture/11_09_weird_floats.html">IEEE addition table</a>.</li>
+                        <li>The returned interval \([m,M]\), if finite, satisfies \(m\leq M\).
+                            For an intervals <code>[-a, b, _, _]</code> and <code>[-c, d, _, _]</code>, we require that \(-((-a)\oplus(-c))\leq b\oplus d\). 
+                            The LHS is \(a\oplus c\) (floating point arithmetic plays well with sign), and adding our argument requirements \(a\leq b\) and \(c\leq d\) yields \(a\oplus c\leq b\oplus d\), as required.
+                        </li>
+                    </ol>
+                </p>
+            </details>
+            <details>
+                <summary>Parallel version</summary>
+                <p>
+                    <pre><code class="language-cpp">inline __m128 add_parallel(const __m128 a, const __m128 b){
+    return _mm_add_ps(a, b);
+}</code></pre>
+                    The intrinsic add works the same across all lanes, so no change is needed for a parallel version.
+                </p>
+            </details>
+                
+            <details>
+                <summary>Performance</summary>
+                <p>
+                    Test script:
+                    <pre><code class="language-cpp">volatile float res = 0.0f;
+volatile __m128 res_i = f32i::interval(0.0f, 0.0f);
+// TEST_COUNT = 100,000,000
+// a and b are fixed, random floats with a_i and b_i equivalent interval versions (respectively)
+
+// Native addition test
+for(std::size_t i = 0; i &lt; TEST_COUNT; ++i){
+    res += a + b;
+}
+// Interval addition test
+for(std::size_t i = 0; i &lt; TEST_COUNT; ++i){
+    res_i = f32i::add(res_i, f32i::add(a_i, b_i));
+}</code></pre>
+                </p>
+                <div style="width:100%; display:flex; flex-direction:column; align-items: center;">
+                    <img style="width: 50%" src="bool_ops_ia/perf_addition.png"/>
+                </div>
+                <p>
+                    The intrinsic <code>_mm_add_ps</code> compiles to a single add instruction.
+                    Performance is identical to native float addition.
+                </p>
+            </details>
+        </details>
+        <details>
+            <summary>Negation</summary>
+            <p>
+                <pre><code class="language-cpp">inline __m128 negate(const __m128 a){
+    return _mm_shuffle_ps(a, a, _MM_SHUFFLE(2, 3, 0, 1));
+}</code></pre>
+                Negation is an exact operation in floating point arithmetic; we need only flip the sign bit.
+                For a finite interval \([m,M]\), its negation is \([-M, -m]\), so our negate-minimum-bound format saves us an instruction here; we just swap the lanes in the interval.
+                Note that <code>_MM_SHUFFLE(3, 2, 1, 0)</code> is the identity shuffle, which may be backward from your expectation.
+            </p>
+            <details>
+                <summary>Finiteness and well-formed conditions</summary>
+                <p>
+                    <ol>
+                        <li>If <code>a</code> or <code>b</code> is non-finite, then the result is non-finite.
+                            Since we are merely swapping the (negated) minimum and maximum, any <code>NaN</code> or infinity will remain in the resulting interval.</li>
+                        <li>The returned interval \([m,M]\), if finite, satisfies \(m\leq M\).
+                            If <code>[-a, b, _, _]</code> is the representation of the interval \([a,b]\), then \(a\leq b\) so that \(-b\leq -a\) (recalling that floating point negation is exact). 
+                            This means that <code>[b, -a, _, _]</code> represents a valid interval.
+                        </li>
+                    </ol>
+                </p>
+            </details>
+            <details>
+                <summary>Parallel version</summary>
+                <p>
+                    <pre><code class="language-cpp">inline __m128 negate_parallel(const __m128 a){
+    return negate(a);
+}</code></pre>
+                    Notice how we also swapped lanes 3 and 4 in the non-parallel negate, so there is no need for a separate parallel version.
+                </p>
+            </details>
+            <details>
+                <summary>Performance</summary>
+                <p>
+                    Test script:
+                    <pre><code class="language-cpp">volatile float res_neg = 1.0f;
+volatile __m128 res_neg_i = f32i::interval(1.0f, 1.0f);
+// TEST_COUNT = 100,000,000
+
+// Native negation test
+for(std::size_t i = 0; i &lt; TEST_COUNT; ++i){
+    res_neg = -res_neg;
+}
+// Interval negation test
+for(std::size_t i = 0; i &lt; TEST_COUNT; ++i){
+    res_neg_i = f32i::negate(res_neg_i);
+}</code></pre>
+                </p>
+                <div style="width:100%; display:flex; flex-direction:column; align-items: center;">
+                    <img style="width: 50%" src="bool_ops_ia/perf_negation.png"/>
+                </div>
+                <p>
+                    The shuffle intrinsic has latency and throughput similar to an XOR instruction, which is what the usual negation operator resolves to.
+                    Note that compiling using later SSE version may result in a <code>vpermilps</code> instruction rather than <code>shufps</code>; these are comparable.
+                </p>
+            </details>
+        </details>
+        <details>
+            <summary>Subtraction</summary>
+            <pre><code class="language-cpp">inline __m128 sub(const __m128 a, const __m128 b){
+    return add(a, negate(b));
+}</code></pre>
+            <p>
+                Since negation is an exact operation on floating point numbers, this occurs no extra approximation penalty (i.e. wider than necessary interval) over an <code>add</code> call.
+            </p>
+            <details>
+                <summary>Finiteness and well-formed conditions</summary>
+                <p>
+                    <ol>
+                        <li>If <code>a</code> or <code>b</code> is non-finite, then the result is non-finite.
+                            If <code>a</code> is non-finite, then the <code>add</code> call will return a non-finite result (see addition section). If <code>b</code> is non-finite, then the <code>negate</code> call will return a non-finite result (see negation section), which will propagate through <code>add</code>.</li>
+                        <li>The returned interval \([m,M]\), if finite, satisfies \(m\leq M\).
+                            As above, this follows directly from the fact that <code>negate</code> and <code>add</code> satisfy this condition.
+                        </li>
+                    </ol>
+                </p>
+            </details>
+            <details>
+                <summary>Parallel version</summary>
+                <p>
+                    <pre><code class="language-cpp">inline __m128 sub_parallel(const __m128 a, const __m128 b){
+    return add_parallel(a, negate_parallel(b));
+}</code></pre>
+                    Not much to say here; note that this is equivalent to <code>add(a, negate(b))</code>.
+                </p>
+            </details>
+            <details>
+                <summary>Performance</summary>
+                <p>
+                    Test script:
+                </p>
+                <pre><code class="language-cpp">volatile float res_sub = 0.0f;
+volatile __m128 res_sub_i = f32i::interval(0.0f, 0.0f);
+
+// TEST_COUNT = 100,000,000, a is a (pseudo-)random float, a_i is the interval [a, a]
+// Native subtraction test
+for(std::size_t i = 0; i &lt; TEST_COUNT; ++i){
+    res_sub = res_sub - (a - res_sub);
+    // loop body assembly:
+    // vsubss   xmm1, xmm2, xmm1
+    // vsubss   xmm0, xmm0, xmm1
+}
+// Interval subtraction test
+for(std::size_t i = 0; i &lt; TEST_COUNT; ++i){
+    res_sub_i = f32i::sub(res_sub_i, f32i::sub(a_i, res_sub_i));
+    // loop body assembly:
+    // vpermilps   xmm0, xmm0, 177
+    // vaddps   xmm0, xmm0, xmm2
+    // vpermilps   xmm0, xmm0, 177
+    // vaddps   xmm0, xmm0, xmm1
+}</code></pre>
+            <div style="width:100%; display:flex; flex-direction:column; align-items: center;">
+                <img style="width: 50%" src="bool_ops_ia/perf_subtraction.png"/>
+            </div>
+            <p>
+                In this particular test it's important to make sure that the <code>-O3</code> optimization does not mess with the subtraction operation that we're looking for; the relevant assembly is listed in the loop body.
+                The runtime of interval arithmetic <em>is</em> consistently slower than the native version.
+                This is pretty clear from the assembly.
+                What is perhaps surprising is that it is not substantially slower.
+                Recall that <code>vpermilps</code> has significantly less latency than <code>vsubss/vaddps</code>.
+                Since these are all dependent instructions, they cannot be executed in parallel.
+                The upshot is that even though our interval assembly has double the instruction, it should not equate to double the runtime per iteration (in cycles).
+            </p>
+            </details>
+        </details>
+        <details>
+            <summary>Decrement Minimum Bounds (<code>decr_min</code>)</summary>
+            The point of this function is to decrease the minimum component \(m\) in an interval \([m, M]\) to the largest float less than \(m\), or keep \(m\) non-finite if \(m\) is non-finite.
+            Although our rounding mode and minimum component sign means we don't need a "previous float" function for addition and subtraction, this is an important sub-routine for multiplication, division, square root, etc.
+            The rounding mode still helps, however, as we do not need a "next float" function.
+            The basic idea is to re-interpret the float minimum component as an integer, then increment or decrement the integer depending on the sign of \(m\).
+            Some special cases are needed for negative zero and negative infinity.
+            <pre><code class="language-cpp">inline __m128 decr_min(const __m128 interval){
+    const __m128i min_max_i = _mm_castps_si128(_mm_add_ps(interval, _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f)));
+    const __m128i ONE = _mm_set_epi32(0,0,0,1);
+    const __m128 p = _mm_castsi128_ps(_mm_add_epi32(min_max_i, ONE));
+    const __m128 n = _mm_castsi128_ps(_mm_sub_epi32(min_max_i, ONE));
+    const float f = _mm_cvtss_f32(interval);
+    return f >= 0.0 || f == -INFINITY ? p : n;
+}</code></pre>
+        <p>
+            Let's first understand the bit strings we're working with and where we'd like them to go.
+            <div style="display:flex; flex-direction: column; align-items: center;">
+                <table style="font-size: small">
+                    <tr>
+                        <th>Bit String</th><th>Float Value</th><th>Goal Bit String</th><th>Goal Float Value</th>
+                    </tr>
+                    <tr>
+                        <td>1 11111111 11111111111111111111111</td><td>-NaN (smallest)</td><td>1 11111111 11111111111111111111110</td><td>Another -NaN</td>
+                    </tr>
+                    <tr>
+                        <td>1 11111111 00000000000000000000001</td><td>-NaN (largest)</td><td>1 11111111 00000000000000000000000</td><td>-Infinity</td>
+                    </tr>
+                    <tr>
+                        <td>1 11111111 00000000000000000000000</td><td>-Infinity</td><td>1 11111111 00000000000000000000001</td><td>-NaN</td>
+                    </tr>
+                    <tr>
+                        <td>1 11111110 11111111111111111111111</td><td>Min finite value</td><td>1 11111110 11111111111111111111110</td><td>Next largest</td>
+                    </tr>
+                    <tr>
+                        <td>1 00000001 00000000000000000000000</td><td>Max negative normal</td><td>1 00000000 11111111111111111111111</td><td>Min negative subnormal</td>
+                    </tr>
+                    <tr>
+                        <td>1 00000000 00000000000000000000001</td><td>Max negative subnormal</td><td>1 00000000 00000000000000000000000</td><td>-0.0</td>
+                    </tr>
+                    <tr>
+                        <td>1 00000000 00000000000000000000000</td><td>-0.0</td><td>0 00000000 00000000000000000000001</td><td>Min positive subnormal</td>
+                    </tr>
+                    <tr>
+                        <td>0 00000000 00000000000000000000000</td><td>0.0</td><td>0 00000000 00000000000000000000001</td><td>Min positive subnormal</td>
+                    </tr>
+                    <tr>
+                        <td>0 00000000 11111111111111111111111</td><td>Max subnormal</td><td>0 00000001 00000000000000000000000</td><td>Min positive normal</td>
+                    </tr>
+                    <tr>
+                        <td>0 11111110 11111111111111111111111</td><td>Max finite value</td><td>0 11111111 00000000000000000000000</td><td>Infinity</td>
+                    </tr>
+                    <tr>
+                        <td>0 11111111 00000000000000000000000</td><td>Infinity</td><td>0 11111111 00000000000000000000000</td><td>NaN (smallest)</td>
+                    </tr>
+                    <tr>
+                        <td>0 11111111 00000000000000000000000</td><td>NaN (smallest)</td><td>0 11111111 00000000000000000000000</td><td>Infinity</td>
+                    </tr>
+                    <tr>
+                        <td>0 11111111 11111111111111111111111</td><td>NaN (largest)</td><td>0 11111111 11111111111111111111110</td><td>Another NaN</td>
+                    </tr>
+                </table>
+            </div>
+            Our minimum interval bound \(m\) is stored in its negated form in the first SIMD slot. 
+            In order to <em>decrement</em> \(m\), we <em>increment</em> the first SIMD slot value.
+            We see in the table above that incrementing floating point numbers is a relatively straight-forward procedure, with a few gotchas:
+            <ul>
+                <li>Negative float values require that their bit string (viewed as an integer) be decremented, while positive float values require their bit string incremented.</li>
+                <li>Positive zero (+0.0) can be incremented as a positive float, but negative zero (-0.0) needs to be incremented by 2.</li>
+                <li>Non-finite values (<code>NaN</code> and <code>Infinity</code>) need to map to other non-finite values for our finiteness condition. It doesn't matter which ones.</li>
+            </ul>
+        </p>
+        <p>
+            With that in mind, let's walk through the code.
+            <pre><code class="language-cpp">inline __m128 decr_min(const __m128 interval){
+    // Note that -0.0 + 0.0 = 0.0 according to IEEE standard; see https://www.cs.uaf.edu/2011/fall/cs301/lecture/11_09_weird_floats.html
+    // By adding 0.0, we remove the special case for -0.0. 
+    const __m128i min_max_i = _mm_castps_si128(_mm_add_ps(interval, _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f)));
+    // Recall the 1 here, though appearing in the last argument of _mm_set_epi32, initializes the first SIMD slot
+    const __m128i ONE = _mm_set_epi32(0,0,0,1);
+    // In every case, we either increment the minimum (as an integer) or decrement.
+    //   p is the incremented case
+    //   n is the decremented case
+    const __m128 p = _mm_castsi128_ps(_mm_add_epi32(min_max_i, ONE));
+    const __m128 n = _mm_castsi128_ps(_mm_sub_epi32(min_max_i, ONE));
+    const float f = _mm_cvtss_f32(interval);
+    // This is a subtle comparison. Let's go through the cases here:
+    //   f == -NaN: f >= 0.0 is false, f == -Infinity is false, we decrement 
+    //   f == -Infinity: f == -Infinity is true, we increment 
+    //   f == negative finite: f >= 0.0 is false, f == -Infinity is false, we decrement 
+    //   f == -0.0: f >= 0.0 is *true*, we increment. Recall in this case that min_max_i is +0.0, not -0.0 
+    //              since we added 0.0 to interval when initializing min_max_i.
+    //   f == 0.0: f >= 0.0 is true, we increment
+    //   f == positive finite: f >= 0.0 is true, we increment 
+    //   f == +Infinity: f >= 0.0 is true, we increment 
+    //   f == +NaN, f >= 0.0 is *false* since every comparison with NaN evaluates to false. We decrement.
+    // Check with the table above to confirm that these are the correct actions!
+    return f >= 0.0 || f == -INFINITY ? p : n;
+}</code></pre>
+            </p>
+            <details>
+                <summary>Finiteness and well-formed conditions</summary>
+                <ol>
+                    <li>
+                        If interval is non-finite, then the result is non-finite. The maximum interval bound is unchanged, so if NaN or Infinity is present in the maximum the result will also be non-finite.
+                        If the minimum interval bound is non-finite, then <code>f</code> will be one of <code>{-NaN, -Infinity, Infinity, NaN}</code> in the above code.
+                        If <code>NaN</code> or <code>-NaN</code>, <code>f >= 0 || f == -INFINITY</code> is false, since any comparison with <code>NaN</code> evaluates to false.
+                        Then the bit string of <code>f</code> is decremented, resulting in another <code>NaN</code>, or <code>+/-Infinity</code>.
+                        If <code>f == +/-Infinity</code>, then <code>f >= 0 || f == -INFINITY</code> is true and <code>f</code> is incremented, resulting in <code>+/-NaN</code>.
+                    </li>
+                    <li>
+                        The returned interval \([m,M]\), if finite, satisfies \(m \leq M\).
+                        Our input interval <code>[-a, b, _, _]</code> satisfies \(a\leq b\). 
+                        Since \(a\) is always decreased or turned into a non-finite number, the returned interval <code>[-a', b, _, _]</code> satisfies \(a'\leq b\) if \(a'\) is finite.
+                    </li>
+                </ol>
+            </details>
+            <details>
+                <summary>Parallel version</summary>
+                <pre><code class="language-cpp">inline __m128 decr_min_parallel(const __m128 interval_p){
+    const __m128i min_max_i = _mm_castps_si128(_mm_add_ps(interval_p, _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f)));
+    const float f1 = _mm_cvtss_f32(interval_p);
+    const float f2 = _mm_cvtss_f32(_mm_permute_ps(interval_p, _MM_SHUFFLE(2, 2, 2, 2)));
+    const __m128i diff = _mm_set_epi32(
+        0, 
+        f2 >= 0.0 || f2 == -INFINITY ? 1 : -1, 
+        0, 
+        f1 >= 0.0 || f1 == -INFINITY ? 1 : -1
+    );
+    return _mm_castsi128_ps(_mm_add_epi32(min_max_i, diff));
+}</code></pre>
+                <p>
+                    There is nothing particularly inspiring about the parallel version. 
+                    We do save a couple add instructions over doing two distinct <code>decr_min</code> calls, but that's about it.
+                    Note that the two parallel minimum components have no relation between each other; one might be positive and the other negative, or both have the same sign.
+                </p>
+            </details>
+            <details>
+                <summary>Performance</summary>
+                <p>
+                    We're not going to do a bar graph like we did with arithmetic operators since there's not a native hardware comparison.
+                    However, we can comment on the behavior of this function. 
+                    First of all, this does <em>not</em> compile to a branchless assembly snippet on my machine (g++ 13.1).
+                    While one might expect the ternary to be compiled to a <code>cmov</code> instruction, g++ evidently thought that it was better to save the <code>f == -INFINITY</code> test and <code>n</code> calculation for when <code>f >= 0.0</code> evaluates to false.
+                    It's not immediately clear if this is a branch that is able to be predicted well.
+                </p>
+                <p>
+                    Second, it would be convenient to remove the dependence on <code>-Infinity</code>, since this needs to be loaded from memory or stored in a register.
+                    One option is the comparison <code>f + k &lt;= f</code> for some suitable (positive) k. 
+                    But k needs to be something like MAX_VALUE here, which defeats the purpose of avoiding a large constant. 
+                    Probably the best option would be to generate the integer matching -Infinity using a few bit operations and then cast.
+                    It's not worth testing until we're in a more complex situation; right now the constant <code>-Infinity</code> is kept in a register outside of the test loop.
+                </p>
+            </details>
+        </details>
+        <details>
+            <summary>Minimum/Maximum from Set (<code>min_max</code>)</summary>
+            <p>
+                This is an interesting operation that appears in division. 
+                The idea is to take a float-valued SIMD vector <code>[a, b, c, d]</code> and return another vector containing the minimum and maximum values of \(a, b, c, d\).
+                It turns out to be convenient to return <code>[-min(a,b,c,d), max(a,b,c,d), _, _]</code>, where "<code>_</code>" indicates an entry that may contain anything.
+                This is useful because it side-steps sign branching; for example \([a,b]\times [c,d]\) could be any of \(\{[ac,bd],[ad,bc],[bc,ad],[bd,ac]\}\) depending on the signs of \(a,b,c\) and \(d\).
+                Instead we can compute the resulting interval as \([\min(ac,ad,bc,bd), \max(ac,ad,bc,bd)]\).
+            </p>
+            <p>
+                It's extra cool because we only need two <code>_mm_max_ps</code> calls to achieve this, together with some shuffle and logical operators.
+                Let's take a look:
+            </p>
+            <pre><code class="language-cpp">inline __m128 min_max(const __m128 p){
+    // The usual way to find max of [a,b,c,d]:
+    //   max([a b c d], [b c d a]) = [max(a,b) max(b,c) max(c,d) max(d,a)]
+    //  --&gt; permute (1 2 3 4)=>(3 4 1 2) --&gt; [max(c,d) max(d,a) max(a,b) max(b,c)]
+    //   max([max(a,b) max(b,c) max(c,d) max(d,a)], [max(c,d) max(d,a) max(a,b) max(b,c)]) has 
+    //   all 4 components equal to max(a,b,c,d)
+    //
+    // This is 3 permute, 2 min, 2 max, 1 blend, 1 xor (all said and done for both max and min)
+
+    // The better way:
+    // max([-a, b, -c, d], [-b, a, -d, c]) = [-min(a,b), max(b,a), -min(c,d), max(d,c)]
+    //  --&gt; permute                          [-min(c,d), max(d,c), -min(a,b), max(b,a)]
+    // max of these is                       [-min(a,b,c,d), max(b,a,d,c), -min(c,d,a,b), max(d,c,b,a)]
+    //
+    // This is 2 permute, 0 min, 2 max, 0 blend, 2 xor
+
+    // Note unique behavior of max/min for x86: https://www.felixcloutier.com/x86/minps
+    // In short, if NaN is an argument to max(a,b), the second argument (b) will be returned, no matter which of {a, b} is NaN.
+    // We require that NaN propagates through this function, i.e., if NaN is one of {a,b,c,d}, then NaN must be present 
+    // in the first or second component of the result.
+    // 
+    // If a == NaN, then max(b,a) == NaN and max(d,c,b,a) = max(max(d,c), max(b,a)) == NaN  (last component)
+    // if b == NaN, then max(-a,-b) == -NaN and -min(c,d,a,b) = max(max(-c,-d), max(-a,-b)) == -NaN  (2nd to last component)
+    // if c == NaN, then max(d,c) == NaN and max(b,a,d,c) = max(max(b,a), max(d,c)) == NaN (2nd component)
+    // if d == NaN, then max(-c,-d) == -NaN and -min(a,b,c,d) = max(max(-a,-b), max(-c,-d)) == -NaN (1st component)
+    //
+    // Recall that NaN values have all 1's in the exponent. So the upshot is that in order to propagate a == NaN and b == NaN,
+    // we need to OR the first component with the third and the second with the fourth (+1 permute, +1 or)
+
+    const __m128 a = _mm_xor_ps(p, _mm_set_ps(0.0f, -0.0f, 0.0f, -0.0f)); // [-a, b, -c, d]
+    const __m128 b = _mm_xor_ps(_mm_shuffle_ps(p, p, _MM_SHUFFLE(2,3,0,1)), _mm_set_ps(0.0f,-0.0f,0.0f,-0.0f)); // [-b, a, -d, c]
+    const __m128 max = _mm_max_ps(a, b);
+    const __m128 max_permute = _mm_shuffle_ps(max, max, _MM_SHUFFLE(1,0,3,2));
+    const __m128 result = _mm_max_ps(max, max_permute);
+    const __m128 nan_permute = _mm_shuffle_ps(result, result, _MM_SHUFFLE(1,0,3,2));
+
+    return _mm_or_ps(nan_permute, result);
+}</code></pre>
+            <p>
+                The most important trick here is that <code>min(a, b) = -max(-a, -b)</code>, which is true exactly for floating point numbers.
+                We can then exploit the parallel SIMD <code>_mm_max_ps</code> instruction to compute both the minimum and maximum at once.
+                Of special note is the unusual behavior of <code>_mm_max_ps</code> with regard to <code>NaN</code>.
+                We need to arrange our permutations well so that any <code>NaN</code> present in the original vector makes it to one of the first two components of the result.
+            </p>
+            <details>
+                <summary>Finiteness and well-formed conditions</summary>
+                <ol>
+                    <li>
+                        The finiteness condition is a little different than usual, since <code>min_max</code> doesn't accept an interval. However, we would still like to impose the following: if any of the components to <code>p</code> are non-finite, then a non-finite value must be present in the first two components of the result.
+                        A table is perhaps not the most elegant here, but possibly the most convincing:
+                        <div style="display:flex; flex-direction:column; align-items: center">
+                            <table style="font-size:smaller !important; white-space: nowrap;">
+                                <tr>
+                                    <th>input</th><th>a</th><th>b</th><th>max</th><th>max_permute</th><th>result</th>
+                                </tr>
+                                <tr>
+                                    <td><code>[NaN,_,_,_]</code></td><td><code>[-NaN,_,_,_]</code></td><td><code>[_,NaN,_,_]</code></td><td><code>[_,NaN,_,_]</code></td><td><code>[_,_,_,NaN]</code></td><td><code>[_,_,_,NaN]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>[-NaN,_,_,_]</code></td><td><code>[NaN,_,_,_]</code></td><td><code>[_,-NaN,_,_]</code></td><td><code>[_,-NaN,_,_]</code></td><td><code>[_,_,_,-NaN]</code></td><td><code>[_,_,_,-NaN]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>[Inf,_,_,_]</code></td><td><code>[-Inf,_,_,_]</code></td><td><code>[_,Inf,_,_]</code></td><td><code>[_,Inf,_,_]</code></td><td><code>[_,_,_,Inf]</code></td><td><code>[_,Inf,_,Inf]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>[-Inf,_,_,_]</code></td><td><code>[Inf,_,_,_]</code></td><td><code>[_,-Inf,_,_]</code></td><td><code>[Inf,_,_,_]</code></td><td><code>[_,_,Inf,_]</code></td><td><code>[Inf,_,Inf,_]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>[_,NaN,_,_]</code></td><td><code>[_,NaN,_,_]</code></td><td><code>[-NaN,_,_,_]</code></td><td><code>[-NaN,_,_,_]</code></td><td><code>[_,_,-NaN,_]</code></td><td><code>[_,_,-NaN,_]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>[_,-NaN,_,_]</code></td><td><code>[_,-NaN,_,_]</code></td><td><code>[NaN,_,_,_]</code></td><td><code>[NaN,_,_,_]</code></td><td><code>[_,_,NaN,_]</code></td><td><code>[_,_,NaN,_]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>[_,Inf,_,_]</code></td><td><code>[_,Inf,_,_]</code></td><td><code>[-Inf,_,_,_]</code></td><td><code>[_,Inf,_,_]</code></td><td><code>[_,_,_,Inf]</code></td><td><code>[_,Inf,_,Inf]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>[_,-Inf,_,_]</code></td><td><code>[_,-Inf,_,_]</code></td><td><code>[Inf,_,_,_]</code></td><td><code>[Inf,_,_,_]</code></td><td><code>[_,_,Inf,_]</code></td><td><code>[Inf,_,Inf,_]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>[_,_,NaN,_]</code></td><td><code>[_,_,-NaN,_]</code></td><td><code>[_,_,_,NaN]</code></td><td><code>[_,_,_,NaN]</code></td><td><code>[_,NaN,_,_]</code></td><td><code>[_,NaN,_,_]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>[_,_,-NaN,_]</code></td><td><code>[_,_,NaN,_]</code></td><td><code>[_,_,_,-NaN]</code></td><td><code>[_,_,_,-NaN]</code></td><td><code>[_,-NaN,_,_]</code></td><td><code>[_,-NaN,_,_]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>[_,_,Inf,_]</code></td><td><code>[_,_,-Inf,_]</code></td><td><code>[_,_,_,Inf]</code></td><td><code>[_,_,_,Inf]</code></td><td><code>[_,Inf,_,_]</code></td><td><code>[_,Inf,_,Inf]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>[_,_,-Inf,_]</code></td><td><code>[_,_,Inf,_]</code></td><td><code>[_,_,_,-Inf]</code></td><td><code>[_,_,Inf,_]</code></td><td><code>[Inf,_,_,_]</code></td><td><code>[Inf,_,Inf,_]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>[_,_,_,NaN]</code></td><td><code>[_,_,_,NaN]</code></td><td><code>[_,_,-NaN,_]</code></td><td><code>[_,_,-NaN,_]</code></td><td><code>[_,-NaN,_,_]</code></td><td><code>[_,-NaN,_,_]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>[_,_,_,-NaN]</code></td><td><code>[_,_,_,-NaN]</code></td><td><code>[_,_,NaN,_]</code></td><td><code>[_,_,NaN,_]</code></td><td><code>[_,NaN,_,_]</code></td><td><code>[_,NaN,_,_]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>[_,_,_,Inf]</code></td><td><code>[_,_,_,Inf]</code></td><td><code>[_,_,-Inf,_]</code></td><td><code>[_,_,_,Inf]</code></td><td><code>[_,Inf,_,_]</code></td><td><code>[_,Inf,_,Inf]</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>[_,_,_,-Inf]</code></td><td><code>[_,_,_,-Inf]</code></td><td><code>[_,_,Inf,_]</code></td><td><code>[_,_,Inf,_]</code></td><td><code>[Inf,_,_,_]</code></td><td><code>[Inf,_,Inf,_]</code></td>
+                                </tr>
+                            </table>
+                        </div>
+                        We see that the only real problem with returning <code>result</code> is when <code>+/-NaN</code> appears in the first or second SIMD slot of <code>input</code>.
+                        This is why we shuffle <code>result</code> and apply an OR operation.
+                        In ordinary circumstances, the first/third and second/fourth slot in <code>result</code> is identical, since <code>_mm_max_ps</code> is symmetric in its arguments except when <code>NaN</code> is present.
+                        Since <code>_mm_max_ps(x, x) = x</code>, this shuffle-or combo does nothing.
+                        But when <code>NaN</code> is present, the all-one exponent of the <code>NaN</code> float in the third or fourth slot will overwrite the exponent in the first or second slot (respectively), causing a <code>NaN</code> to appear in the first two slots as well.
+                    </li>
+                    <li>
+                        We would also like to apply the well-formed condition to <code>min_max</code> as well, by asserting that the resulting SIMD vector <code>[-a,b,_,_]</code>, if finite, always satisfies \(a\leq b\).
+                        This is true since <code>min</code> and <code>max</code> are exact operations on finite floating point numbers, with <code>min(a,b,c,d) &lt;= max(a,b,c,d)</code> always.
+                    </li>
+                </ol>
+            </details>
+            <details>
+                <summary>Performance</summary>
+                As with "Decrement Minimum Bounds", there is no equivalent hardware operation to compare to.
+                However, this is a branchless algorithm thanks to <code>_mm_max_ps</code>.
+            </details>
+        </details>
+        <details>
+            <summary>Maximum from Set (<code>max_h</code>)</summary>
+            <p>
+                We want to take a SIMD vector <code>[a, b, c, d]</code> and return another SIMD vector <code>[M, M, _, _]</code>, where <code>M</code> is the maximum value of <code>a</code>, <code>b</code>, <code>c</code> and <code>d</code>.
+                This is exactly the same code as <code>min_max</code>, but with every <code>_mm_xor_ps</code> call stripped out.
+            </p>
+            <pre><code class="language-cpp">// If p = [a,b,c,d], puts max(a,b,c,d) into the first two components of the result
+inline __m128 max_h(const __m128 p){
+    // [a, b, c, d]
+    const __m128 a = p;
+    // [b, a, d, c]
+    const __m128 b = _mm_shuffle_ps(p, p, _MM_SHUFFLE(2,3,0,1));
+    // [max(a,b), max(b,a), max(c,d), max(d,c)]
+    const __m128 max = _mm_max_ps(a, b);
+    // [max(c,d), max(d,c), max(a,b), max(b,a)]
+    const __m128 max_permute = _mm_shuffle_ps(max, max, _MM_SHUFFLE(1,0,3,2));
+    // [max(a,b,c,d), max(b,a,d,c), max(c,d,a,b), max(d,c,b,a)]
+    const __m128 result = _mm_max_ps(max, max_permute);
+    // [max(c,d,a,b), max(d,c,b,a), _, _]
+    const __m128 nan_permute = _mm_shuffle_ps(result, result, _MM_SHUFFLE(1,0,3,2));
+
+    return _mm_or_ps(nan_permute, result);
+}</code></pre>
+            <p>
+                Since the primary concern with propagating <code>NaN</code> is the order of arguments in <code>_mm_max_ps</code> (see <code>min_max</code>), ignoring the negation has no effect on <code>NaN</code> propagation.
+            </p>
+            <details>
+                <summary>Finiteness and well-formed conditions</summary>
+                <p>
+                    The well-formed condition does not apply here, since an interval is not returned. 
+                    However, we do wish to apply a version of the finiteness condition. 
+                    In particular, for an SIMD vector <code>[a, b, c, d]</code> containing any non-finite value, we wish the result vector <code>[M, M, _, _]</code> to contain a non-finite value in its first two components. 
+                    Moreover, if <code>b</code> or <code>d</code> is non-finite, then the first component of the result will be non-finite.
+                    If <code>a</code> or <code>c</code> is non-finite, then the second component of the result will be non-finite. 
+                </p>
+                <p>
+                    The proof for this is identical to that of <code>min_max</code>, but with various sign changes not affecting the result.
+                    Please refer to the relevant "Finiteness and well-formed conditions" section.
+                </p>
+            </details>
+            <details>
+                <summary>Performance</summary>
+                <p>
+                    This is strictly faster than <code>min_max</code>, since it is also branchless and avoids several <code>_mm_xor_ps</code> calls.
+                </p>
+            </details>
+        </details>
+        <details>
+            <summary>Multiplication</summary>
+            <pre><code class="language-cpp">inline __m128 mult(const __m128 a, const __m128 b){
+    // [-w, x, -w, x]
+    const __m128 wxwx = _mm_shuffle_ps(a, a, _MM_SHUFFLE(1,0,1,0));
+    // [-y, z, -z, y]
+    const __m128 yzzy1 = _mm_xor_ps(_mm_shuffle_ps(b, b, _MM_SHUFFLE(0,1,1,0)), _mm_set_ps(-0.0f, -0.0f, 0.0f, 0.0f));
+    // [y, -z, z, -y]
+    const __m128 yzzy2 = _mm_xor_ps(yzzy1, _mm_set_ps(-0.0f, -0.0f, -0.0f, -0.0f));
+
+    // [wy, xz, wz, xy]
+    const __m128 m1 = _mm_mul_ps(wxwx, yzzy1);
+    // [-wy, -xz, -wz, -xy]
+    const __m128 m2 = _mm_mul_ps(wxwx, yzzy2);
+
+    return _mm_blend_ps(max_h(m2), max_h(m1), 2);
+}</code></pre>
+            <p>
+                The multiplication function \(\times:\mathbb{R}^2 \to \mathbb{R}\) is continuous, so the image of the connected set \([a,b]\times [c,d]\) is also connected; i.e. an interval. 
+                Since multiplication is an <em>open</em> mapping, the endpoints of the resulting interval lie in the set \(\{ac,ad,bc,bd\}\).
+                This is the main idea of the algorithm used above.
+                We can use the four SIMD lanes to compute all endpoint possibilities at once.
+                Since the resulting set is connected, the endpoints must be \(\min(ac,ad,bc,bd)\) and \(\max(ac,ad,bc,bd)\).
+            </p>
+            <p>
+                Now since these exact products may not be float-representable, we generate an over-approximation via <code>_mm_mul_ps(wxwx, yzzy1)</code>; recall that our default rounding mode is toward <code>+Infinity</code>.
+                The <em>negation</em> of an under-approximation is <code>_mm_mul_ps(wxwx, yzzy2)</code>, which is just <code>[a*(-c), b*(-d), a*(-d), b*(-c)]</code>.
+                This works the same as addition does: a rounding mode toward <code>+Infinity</code> when working with negated values is the same as a rounding mode toward <code>-Infinity</code>.
+                Similarly, the maximum taken on negated values is the same as a minimum.
+                (More formally, \(\max(-a,-b)=-\min(a,b)\).)
+                Since <code>m2</code> is a (negated) under-approximation of the endpoint products, its maximum value (really a minimum) represents the negation of an under-approximation to the smallest endpoint product, i.e. the first component of the result. 
+                Likewise, <code>m1</code> is an over-approximation of the endpoint products, so that its maximum is an over-approximation of the largest endpoint product; the second component of the result.
+            </p>
+            <details>
+                <summary>Finiteness and well-formed conditions</summary>
+                <p>
+                    <ol>
+                        <li>
+                            If <code>a</code> or <code>b</code> is non-finite, then the result is non-finite.
+                            Suppose <code>+/-Infinity</code> or <code>+/-NaN</code> is present in the first two slots of <code>a</code> (the only slots containing meaningful information). 
+                            Then <code>wxwx</code> also contains a non-finite slot, since it is a shuffle of <code>a</code>.
+                            Since any multiplication involving <code>+/-Infinity</code> or <code>+/-NaN</code> returns a non-finite value (see <a href="https://www.cs.uaf.edu/2011/fall/cs301/lecture/11_09_weird_floats.html">this</a> table), both <code>m1</code> and <code>m2</code> will contain a non-finite value.
+                            Importantly, <code>m1</code> and <code>m2</code> will contain non-finite values in the same SIMD slot.
+                            This means that, by the finiteness contract of <code>max_h</code>, <code>max_h(m1)</code> and <code>max_h(m2)</code> will both have a non-finite value in the same slot.
+                            This means that any blending of <code>max_h(m1)</code> and <code>max_h(m2)</code> will have a non-finite value in one of the first two SIMD slots.
+                            The case for <code>b</code> non-finite is entirely analogous, noting that negation (<code>xor</code> with <code>-0.0</code>) maps non-finite values to non-finite values.
+                        </li>
+                        <li>
+                            The returned interval \([m,M]\), if finite, satisfies \(m \leq M\).
+                            Since <code>max_h(m2)</code> is (the negation of) an under-approximation of the minimal endpoint product and <code>max_h(m1)</code> is an over-approximation of the maximal endpoint product, we have <code>-max_h(m2) &lt= max_h(m1)</code> in the first two components.
+                            The final SIMD vector is formed by taking the first slot of <code>max_h(m2)</code> together with the second slot of <code>max_h(m1)</code>, so our condition is satisfied.
+                        </li>
+                    </ol>
+                </p>
+            </details>
+            <details>
+                <summary>Parallel version</summary>
+                <pre><code class="language-cpp">inline __m128 mult_parallel(const __m128 a, const __m128 b){
+    const __m128 first_lane = mult(a, b);
+    // if a = [s,t,u,v], swap_parallel(a) is [u,v,s,t]
+    const __m128 x = swap_parallel(a);
+    const __m128 y = swap_parallel(b);
+    const __m128 second_lane = swap_parallel(mult(x, y));
+    return _mm_blend_ps(first_lane, second_lane, _MM_SHUFFLE(1, 1, 0, 0));
+}</code></pre>
+                <p>
+                    Since <code>mult</code> takes up all the SIMD slots, we can't do much other than serially perform the multiplications in each lane.
+                    This may be a good opportunity for 256 bit SIMD types. 
+                </p>
+            </details>
+            <details>
+                <summary>Performance</summary>
+                <p>Test script:</p>
+                <pre><code class="language-cpp">volatile float res_mul = 0.5f;
+volatile __m128 res_mul_i = f32i::interval(.5f, .5f);
+const __m128 ONE_POINT_ONE_I = f32i::interval(1.1f, 1.1f);
+
+// TEST_COUNT = 100,000,000
+// Native multiplication test
+for(std::size_t i = 0; i &lt; TEST_COUNT; ++i){
+    // this will display oscillating behavior, which is good enough for us
+    res_mul = 1.1f - res_mul * res_mul;
+}
+
+// Interval multiplication test
+for(std::size_t i = 0; i &lt; TEST_COUNT; ++i){
+    res_mul_i = f32i::sub(ONE_POINT_ONE_I, f32i::mult(res_mul_i, res_mul_i));
+}</code></pre>
+                <p>
+                    We use the subtraction to create oscillating behavior for <code>res_mul</code>.
+                </p>
+                <div style="width:100%; display:flex; flex-direction:column; align-items: center;">
+                    <img style="width: 50%" src="bool_ops_ia/perf_multiplication.png"/>
+                </div>
+                <p>
+                    This is going to be our worst relative performance difference across the board. 
+                    Whereas float division is relatively expensive, multiplication is almost as fast as addition and subtraction.
+                    (On my architecture is has the same throughput but higher latency).
+                    So there is no hiding the sizable overhead of <code>max_h</code>.
+                </p>
+                <p>
+                    One might be tempted to replace the two <code>_mm_mult_ps</code> calls with a single one (computing only the over-approximation) and use <code>decr_min</code> instead of two <code>max_h</code> calls.
+                    This would be the resulting code:
+                </p>
+                <pre><code class="language-cpp">inline __m128 mult_alt(const __m128 a, const __m128 b){
+    // [-w, x, -w, x]
+    const __m128 wxwx = _mm_shuffle_ps(a, a, _MM_SHUFFLE(1,0,1,0));
+    // [-y, z, -z, y]
+    const __m128 yzzy = _mm_xor_ps(_mm_shuffle_ps(b, b, _MM_SHUFFLE(0,1,1,0)), _mm_set_ps(-0.0f, -0.0f, 0.0f, 0.0f));
+    const __m128 p = _mm_mul_ps(wxwx, yzzy); // [wy, xz, wz, xy] rounded to +inf
+
+    // min_max will always preserve NaN and +/-inf
+    const __m128 mm = min_max(p);
+    return decr_min(mm);
+}</code></pre>
+                <p>
+                    This is <em>not</em> a branchless algorithm due to <code>decr_min</code>, which is a bummer, and it is also measurably slower.
+                    The two <code>_mm_mul_ps</code> calls in the non-alt version don't depend on each other and can be queued up at the same time; multiplication has high throughput.
+                    <code>min_max</code> also has a fairly high number of negations, so two <code>max_h</code> calls is not necessarily the loss that it appears.
+                </p>
+            </details>
+        </details>
+        <details>
+            <summary>Division</summary>
+            <pre><code class="language-cpp">inline __m128 div(const __m128 a, const __m128 b){
+    // [-w, x, -w, x]
+    const __m128 wxwx = _mm_permute_ps(a, _MM_SHUFFLE(1,0,1,0));
+    // [-y, z, -z, y]
+    const __m128 yzzy = _mm_xor_ps(_mm_permute_ps(b, _MM_SHUFFLE(0,1,1,0)), _mm_set_ps(-0.0f, -0.0f, 0.0f, 0.0f));
+    // [w/y, x/z, w/z, x/y] rounded to +inf
+    const __m128 q = _mm_div_ps(wxwx, yzzy); 
+
+    const __m128 mm = min_max(q);
+    const __m128 min_max_res = decr_min(mm);
+
+    const float ny = _mm_cvtss_f32(yzzy);
+    const float z = _mm_cvtss_f32(_mm_shuffle_ps(b, b, _MM_SHUFFLE(1, 1, 1, 1)));
+    constexpr float n_inf = -INFINITY;
+    const bool condition = z &gt; n_inf &amp;&amp; z &lt; INFINITY &amp;&amp; ny &gt; n_inf &amp;&amp; ny &lt; INFINITY &amp;&amp; (ny &lt; 0 || z &lt; 0);
+
+    return condition ? min_max_res : _mm_set_ps(INFINITY, INFINITY, INFINITY, INFINITY);
+}</code></pre>
+            <p>
+                The function \((x,y)\mapsto x/y\) is continuous on \(\mathbb{R}\times (\mathbb{R}\setminus \{0\})\) and, like multiplication, an open mapping on \(\mathbb{R}\times (0,\infty)\) and \(\mathbb{R}\times (-\infty, 0)\). 
+                Thus for the division \([a,b]/[c,d]\) where \(0\notin [c,d]\), the resulting interval is
+                \[ [\min(\frac{a}{c}, \frac{a}{d}, \frac{b}{c}, \frac{b}{d}), \max(\frac{a}{c}, \frac{a}{d}, \frac{b}{c}, \frac{b}{d})]\,. \]
+                Conveniently, when \(0\in [c,d]\), the division function is either unbounded or undefined.
+                In these cases we return a non-finite interval. 
+            </p>
+            <p>
+                We compute the pairwise quotients \(\frac{a}{c}, \frac{a}{d}, \frac{b}{c}, \frac{b}{d}\) in one go, with the result in <code>q</code>.
+                We then compute the minimum and maximum pairwise quotient (<code>mm</code>), and pad the lower bound by 1ulp so our resulting interval is conservative. 
+                Then we test whether \(0\in [y,z]\), noting that <code>y</code> is finite exactly when <code>y &gt; -Infinity && y &lt; Infinity</code>; when <code>y == +/-NaN</code> all comparisons evaluate to false.
+                If it is the case that \(0\in [y,z]\), we return a non-finite interval, otherwise our bounded interval calculated from the pairwise quotients.
+            </p>
+            <details>
+                <summary>Finiteness and well-formed conditions</summary>
+                <p>
+                    <ol>
+                        <li>
+                            If <code>a</code> or <code>b</code> is non-finite, then the result is non-finite. We'll be referencing the <a href="https://www.cs.uaf.edu/2011/fall/cs301/lecture/11_09_weird_floats.html">IEEE division table</a> here, for your reference.
+                            If <code>a = [w, x, _, _]</code> is non-finite, then <code>q</code> will be non-finite by our division table. 
+                            In this case, <code>min_max_res</code> is non-finite because of the finiteness contract of <code>min_max</code> and <code>decr_min</code>.
+                            Then the returned interval is always non-finite no matter the value of <code>condition</code>.
+                            If, on the other hand, <code>b = [y, z, _, _]</code> is non-finite, then <code>condition</code> is <code>false</code> because it explicitly checks that <code>y</code> and <code>z</code> are finite (remember that any comparison with <code>NaN</code> evaluates to <code>false</code>).
+                            Then the non-finite interval <code>[Inf, Inf, _, _]</code> is returned.
+                        </li>
+                        <li>The returned interval \([m,M]\), if finite, satisfies \(m\leq M\).
+                            If the returned interval is finite, it must be that <code>condition</code> is true.
+                            But since <code>min_max</code> and <code>decr_min</code> satisfy well-formed conditions (see their respective sections), <code>min_max_res</code> is always a well-formed interval.
+                        </li>
+                    </ol>
+                </p>
+            </details>
+            <details>
+                <summary>Parallel version</summary>
+                <pre><code class="language-cpp">inline __m128 div_parallel(const __m128 a, const __m128 b){
+    const __m128 first_lane = mult(a, b);
+    // if a = [s,t,u,v], swap_parallel(a) is [u,v,s,t]
+    const __m128 x = swap_parallel(a);
+    const __m128 y = swap_parallel(b);
+    const __m128 second_lane = swap_parallel(div(x, y));
+    return _mm_blend_ps(first_lane, second_lane, _MM_SHUFFLE(1, 1, 0, 0));
+}</code></pre>
+                <p>
+                    As with multiplication, since <code>div</code> uses all our SIMD slots, our only real option is to perform both operations serially. 
+                    This is a good opportunity for 256 bit SIMD vectors, for example.
+                </p>
+            </details>
+            <details>
+                <summary>Performance</summary>
+                <p>Test script:</p>
+                <pre><code class="language-cpp">// TEST_COUNT = 100,000,000
+volatile float res_div = 0.5f;
+volatile __m128 res_div_i = f32i::interval(.5f, .5f);
+const __m128 ONE_POINT_ONE_I = f32i::interval(1.1f, 1.1f);
+
+// Native division test
+for(std::size_t i = 0; i &lt; TEST_COUNT; ++i){
+    res_div = 1.1 + 1.1f / res_div;
+}
+
+// Interval division test
+for(std::size_t i = 0; i &lt; TEST_COUNT; ++i){
+    res_div_i = f32i::add(ONE_POINT_ONE_I, f32i::div(ONE_POINT_ONE_I, res_div_i));
+}</code></pre>
+                <div style="width:100%; display:flex; flex-direction:column; align-items: center;">
+                    <img style="width: 50%" src="bool_ops_ia/perf_division.png"/>
+                </div>
+                <p>
+                    As with multiplication, we have the option of doing two (SIMD) division operations with opposite sign, or one division with <code>decr_min</code>. 
+                    In this case, tests showed that <code>decr_min</code> is the faster choice.
+                    This is <em>not</em> a branchless algorithm, and is the only elementary arithmetic operation (addition, subtraction, multiplication, division) to have branches.
+                    Since native division is also relatively slow, this is not as big of a deal.
+                </p>
+            </details>
+        </details>
+        <details>
+            <summary>Absolute Value</summary>
+            <p>
+                Absolute value as a map \(\mathbb{R}\to\mathbb{R}\) is not an open mapping.
+                This is a fancy way of saying that we can't just take the absolute value of the endpoints of an interval and call it a day. 
+                Instead, an interval \([a,b]\) has absolute value \([0,b]\) if \(0\in [a,b]\), and an interval \([a,b]\) has absolute value \([-b,-a]\) if \(b &lt; 0\).
+                This branching has to be present (in some form) in the algorithm we choose.
+            </p>
+            <pre><code class="language-cpp">inline __m128 abs(const __m128 a){
+    const bool min_neg = _mm_cvtss_f32(a) > 0; // not a typo
+    const __m128 shuffled = _mm_permute_ps(a, _MM_SHUFFLE(3,2,0,1));
+    const __m128 res = min_neg ? shuffled : a;
+    const bool includes_origin = min_neg && (_mm_cvtss_f32(res) > 0);
+    if(!includes_origin){
+        return res;
+    } else {
+        const float all_ones = _mm_cvtss_f32(_mm_castsi128_ps(_mm_set_epi32(-1, -1, -1, -1)));
+        const __m128 and_mask = _mm_set_ps(all_ones, all_ones, all_ones, 0.0f);
+        return _mm_and_ps(_mm_max_ps(a, res), and_mask);
+    }
+}</code></pre>
+            <p>
+                The branching is fairly straight-forward for an interval \([m, M]\): 
+                <ul>
+                    <li>If \(M\leq 0\), then \(\text{abs}([m,M])=[-M,-m]\).</li>
+                    <li>If \(m\geq 0\), then \(\text{abs}([m,M])=[m,M]\).</li>
+                    <li>Otherwise, \(\text{abs}([m,M])=[0,\max(-m, M)]\).</li>
+                </ul>
+                These follows from the fact that the absolute value function is a continuous, open mapping (separately) on \((-\infty,0]\) and \([0,\infty)\).
+                This is fairly straight-forward in the above code.
+                First we assume that the interval <code>a</code> does not contain zero, and set <code>res</code> to the corresponding absolute value based on the sign of the minimal endpoint.
+                As with negation, since we store the <em>negation</em> of the minimal endpoint in the first SIMD component, permutation of the SIMD indices is sufficient to retrieve the negated interval (<code>shuffled</code>).
+                Note that we keep the unused indices 2 and 3 unshuffled for use in <code>abs_parallel</code>.
+            </p>
+            <p>
+                Then we check whether <code>a</code> contains zero (<code>includes_origin</code>) with a little trick. 
+                If <code>min_neg</code> is false, then the minimum component of <code>a</code> is positive and the interval does not contain zero. 
+                If <code>min_neg</code> is true, then we need to check that the maximum component of <code>a</code> is positive, but in this case <code>res</code> already contains the maximum component; we can access it with the instruction-less <code>_mm_cvtss_f32</code> rather than another shuffle call.
+            </p>
+            <p>
+                In the event that the interval <code>a</code> <em>does</em> contain zero, we use a <code>_mm_max_ps</code> instruction to put \(\max(-m, M)\) into the second SIMD component, and zero out the first component with an <code>_mm_and_ps</code> instruction. 
+                (Note that the integer <code>-1</code> in two's complement is the bitstring consisting of all ones.)
+            </p>
+            <p>
+                Note that this is an exact algorithm; negation on floating point arithmetic is exact.
+            </p>
+            <details>
+                <summary>Finiteness and well-formed conditions</summary>
+                <p>
+                    <ol>
+                        <li>
+                            If <code>a</code> is non-finite, then the result is non-finite.
+                            Suppose the interval <code>a</code> has minimal endpoint <code>m</code> and maximal endpoint <code>M</code>.
+                            If <code>m</code> is <code>+/-NaN</code> or <code>+Infinity</code>, then <code>min_neg</code> is false, since every comparison with <code>NaN</code> evaluates to false. 
+                            Then <code>res</code> is returned, which is just <code>a</code> (which contains <code>+/-NaN</code>).
+                            If <code>m</code> is <code>-Infinity</code> and <code>includes_origin</code> is false, then <code>res</code> contains <code>+Infinity</code> in its second slot (due to the permutation), which is returned.
+                            If <code>m</code> is <code>-Infinity</code> and <code>includes_origin</code> is true, then <code>res</code> has <code>+Infinity</code> in its second slot, <code>_mm_max_ps(a, res)</code> contains <code>+Infinity</code> in its second slot.
+                            This is unaffected by the subsequent <code>_mm_and_ps</code> call and returned.
+                            If <code>M</code> is <code>+/-NaN</code> or <code>-Infinity</code>, then <code>_mm_cvtss_f32(res) &gt; 0</code> always is false (if it gets there) so that <code>res</code> is returned. 
+                            Since <code>res</code> is a permutation of <code>a</code>, <code>M</code> is present in the result. 
+                            Finally, if <code>M</code> is <code>+Infinity</code> <em>and</em> <code>includes_origin</code> is true, then <code>_mm_max_ps(a, res)</code> contains <code>+Infinity</code> in the second SIMD slot, which propagates to the returned value. (Note that <code>_mm_max_ps</code> works with infinity, see <a href="https://www.felixcloutier.com/x86/minps">here</a>).
+                        </li>
+                        <li>
+                            The returned interval \([m,M]\), if finite, satisfies \(m\leq M\).
+                            If <code>includes_origin</code> is true, then <code>res</code> is either <code>a</code> or the negation of <code>a</code>, both of which satisfy \(m\leq M\).
+                            If <code>includes_origin</code> is false, then the returned interval is <code>[0, max(M, -m)]</code> such that \(M \geq 0\) (otherwise <code>includes_origin</code> would be false).
+                        </li>
+                    </ol>
+                </p>
+            </details>
+            <details>
+                <summary>Parallel version</summary>
+                <p>
+                    Because absolute value requires basically no computation, only branching, there is not much we can do in the way of a true parallel version. 
+                </p>
+                <pre><code class="language-cpp">inline __m128 abs_parallel(const __m128 a){
+    // relies on the fact that abs(...) does not change the parallel channel
+    const __m128 a_abs_half = abs(a);
+    return swap_parallel(abs(swap_parallel(a_abs_half)));
+}</code></pre>
+                <p>
+                    Because our absolute value function does not mess with the 3rd and 4th SIMD slots (this is something that needs to be checked carefully), we can skip the blend step typical in "serial" parallel versions like division.
+                </p>
+            </details>
+            <details>
+                <summary>Performance</summary>
+                <p>
+                    Test script:
+                </p>
+                <pre><code class="language-cpp">volatile float res_abs = 1.0f;
+volatile __m128 res_abs_i = f32i::interval(1.0f, 2.0f);
+// TEST_COUNT = 100,000,000
+
+// Native test
+for(std::size_t i = 0; i &lt; TEST_COUNT; ++i){
+    res_abs = std::abs(res_abs);
+    res_abs = std::abs(-res_abs);
+}
+// Interval test
+for(std::size_t i = 0; i &lt; TEST_COUNT; ++i){
+    res_abs_i = f32i::abs(res_abs_i);
+    res_abs_i = f32i::abs(f32i::negate(res_abs_i));
+}</code></pre>
+                <p>
+                    The fact that absolute value is a branching algorithm makes it difficult to accurately test. 
+                    For one, it's quite difficult to fool the branch predictor (i.e., make branch prediction <em>not</em> essentially 100%) without adding excessive runtime overhead.
+                    Even if we could, it's quite possible that the dependency chain is shallow enough in a test like this to not make a difference. 
+                    For this test, we exercise two branches of <code>f32i::abs</code>, one where the interval is entirely negative and one where it is entirely positive. 
+                    Since interval arithmetic is designed to primarily work with small intervals, we expect the third branch (the interval contains zero) to be rare; hence its omission from the test case.
+                </p>
+                <p>
+                    We find a very comparable runtime to the native version.
+                </p>
+                <div style="width:100%; display:flex; flex-direction:column; align-items: center;">
+                    <img style="width: 50%" src="bool_ops_ia/perf_abs.png"/>
+                </div>
+            </details>
+        </details>
+        <details>
+            <summary>Square</summary>
+            <p>
+                One might be tempted to implement a square function as 
+            </p>
+            <pre><code class="language-cpp">inline __m128 sq(const __m128 a){
+    return mult(a, a);
+}</code></pre>
+            <p>
+                This yields a much wider interval than we wish.
+                Consider <code>a = [-2, 2]</code>.
+                In this implementation, the returned interval is <code>[-4, 4]</code>, but we really know that the square of any real number is positive.
+                The correct interval is <code>[0, 4]</code>.
+                In addition, we can avoid the <code>max_h</code> calls from <code>mult</code> since we know more about the arguments, namely that <code>mult(a, a)</code> has the same second argument as first.
+            </p>
+            <p>
+                With some thought, you'll notice that the required branching here is very similar to absolute value.
+                Indeed, since \(x^2=\|x\|^2\) and \(x\mapsto x^2\) is monotonic (increasing) on \(\{x\geq 0:x\in \mathbb{R}\}\), we can abstract all our casework to <code>abs</code>.
+            </p>
+            <pre><code class="language-cpp">inline __m128 sq(const __m128 a){
+    const __m128 a_abs = abs(a);
+    const __m128 sign_flip = _mm_set_ps(0.0f, 0.0f, 0.0f, -0.0f);
+    const __m128 a_abs_n = _mm_xor_ps(a_abs, sign_flip);
+    return _mm_mul_ps(a_abs_n, a_abs);
+}</code></pre>
+            <p>
+                The SIMD vector <code>a_abs</code> is <code>[-m, M]</code>, where <code>[m, M]</code> is the interval representing the absolute value of <code>a</code>. 
+                Then <code>a_abs_n</code> is <code>[m, M]</code>, by using an <code>xor</code> to flip the sign of the first slot. 
+                Our result is then <code>[-m*m, M*M]</code>.
+                Since \(0\leq m \leq M\) from the absolute value call, \(m^2\leq M^2\) and this is the interval we are looking for.
+                Note in particular that both <code>M*M</code> and <code>(-m)*m</code> are rounded upward (our default rounding mode is always to <code>+Infinity</code>), meaning that the bounds are conservative on both sides. 
+            </p>
+            <p>
+                This function never returns an interval containing a negative value. 
+                This is because the floating-point multiplication of a non-negative number with a non-positive number is always non-positive.
+            </p>
+            <details>
+                <summary>Finiteness and well-formed conditions</summary>
+                <p>
+                    <ol>
+                        <li>
+                            If <code>a</code> is non-finite, then the result is non-finite.
+                            The <code>abs</code> function adheres to the finiteness condition, <code>xor</code> with <code>+/-0.0f</code> preserves (the classes) <code>+/-NaN</code> and <code>+/-Infinity</code>, and the <a href="https://www.cs.uaf.edu/2011/fall/cs301/lecture/11_09_weird_floats.html">multiplication tables</a> for IEEE multiplication preserve <code>+/-NaN</code> and <code>+/-Infinity</code>.
+                        </li>
+                        <li>
+                            The returned interval \([m,M]\), if finite, satisfies \(m\leq M\).
+                            If <code>a_abs</code> is the interval <code>[m, M]</code>, then the resulting SIMD vector returned is <code>[(-m)*m, M*M, _, _]</code>. 
+                            Since \(m\leq M\) from the well-formed condition of <code>abs</code>, we see that \(m^2\leq M^2\), noting that IEEE multiplication is monotonic.
+                        </li>
+                    </ol>
+                </p>
+            </details>
+            <details>
+                <summary>Parallel version</summary>
+                <pre><code class="language-cpp">inline __m128 sq_parallel(const __m128 a){
+    const __m128 a_abs = abs_parallel(a);
+    const __m128 sign_flip = _mm_set_ps(0.0f, -0.0f, 0.0f, -0.0f);
+    const __m128 a_abs_n = _mm_xor_ps(a_abs, sign_flip);
+    return _mm_mul_ps(a_abs_n, a_abs);
+}</code></pre>
+                <p>
+                    We can effectively and trivially parellelize everything except the <code>abs</code> call. 
+                </p>
+            </details>
+            <details>
+                <summary>Performance</summary>
+                <p>
+                    Test script:
+                </p>
+                <pre><code class="language-cpp">volatile float res_sq = 0.5f;
+volatile __m128 res_sq_i = f32i::interval(0.5f, 0.5f);
+// TEST_COUNT = 100,000,000
+// ONE_POINT_ONE_I is initialized to f32::interval(1.1f, 1.1f)
+
+// Native test
+for(std::size_t i = 0; i &lt; TEST_COUNT; ++i){
+    res_sq = 1.1f - res_sq * res_sq;
+}
+// Interval test
+for(std::size_t i = 0; i &lt; TEST_COUNT; ++i){
+    res_sq_i = f32i::sub(ONE_POINT_ONE_I, f32i::sq(res_sq_i));
+}</code></pre>
+                <p>
+                    This is the same test as multiplication, since it already squared a number. 
+                    See the "Performance" section for multiplication for details.
+                </p>
+                <p>
+                    We achieve significantly better (relative) performance for <code>sq</code> than for <code>mult</code>, which makes sense. 
+                </p>
+                <div style="width:100%; display:flex; flex-direction:column; align-items: center;">
+                    <img style="width: 50%" src="bool_ops_ia/perf_sq.png"/>
+                </div>
+            </details>
+        </details>
+        <details>
+            <summary>Square Root</summary>
+            <p>
+                This is the first function which has a limited domain over \(\mathbb{R}\). 
+                We ought to be careful with this; if we give up on a calculation \(\sqrt{[a,b]}\) when \(a&lt;0\) (say be returning \([-\infty, \infty]\)), we run the risk of the following calculation yielding non-useful results:
+                \[ \sqrt{([a,b]\oplus [c,d])\ominus [c,d]\ominus[a,b]}\,. \]
+                Our strategy will be to <em>only</em> offer functions defined on \(\mathbb{R}\). 
+                There are several ways to extend the square root function to \(\mathbb{R}\). 
+                We choose \(x\mapsto \sqrt{|x|}\).
+            </p>
+            <pre><code class="language-cpp">inline __m128 sqrt_abs(const __m128 a){
+    const __m128 a_abs = abs(a);
+    // Flip sign of minimum so we can apply simd sqrt; if a_abs = [-A, B, _, _],
+    // then correct_sign = [A, B, _, _]. Both A and B are non-negative here from the abs(a) call above.
+    const __m128 sign_flip = _mm_set_ps(0.0f, -0.0f, 0.0f, -0.0f);
+    // -0.0f is 1 000000000 0000000000000000000000 so that xor with -0.0 flips the first (sign) bit.
+    const __m128 correct_sign = _mm_xor_ps(a_abs, sign_flip);
+    // apply sqrt (recall we're on rounding mode to +inf, so this OVERestimates the lower bound by at most 1ulp)
+    const __m128 sqrt = _mm_sqrt_ps(correct_sign);
+    // swap sign back and decrement min
+    return decr_min(_mm_xor_ps(sqrt, sign_flip));
+}</code></pre>
+            <p>
+                Note that <code>abs</code> will <em>always</em> return an interval with non-negative minimum and maximum since <code>abs</code> is an exact operation.
+                Thus <code>correct_sign</code> will always consist of non-negative values so that <code>_mm_sqrt_ps</code> never returns <code>NaN</code> (on finite input).
+            </p>
+            <p>
+                Since \(x\mapsto \sqrt{x}\) is a monotonically increasing, continuous open mapping on \([0,\infty]\), we can just apply a square root operation to each interval endpoint; i.e., 
+                \[ \sqrt{[a,b]}=[\sqrt{a},\sqrt{b}] \]
+                when \(a,b\geq 0\).
+            </p>
+            <p>
+                It's also important to note that square root (along with addition, subtraction, multiplication and division) is a "basic operation" required by the IEEE standard to be accurate up to 0.5ulp for all inputs.
+            </p>
+            <details>
+                <summary>Finiteness and well-formed conditions</summary>
+                <p>
+                    <ol>
+                        <li>
+                            If <code>a</code> is non-finite, then the result is non-finite.
+                            Since <code>abs</code> adheres to the finiteness condition, if <code>a</code> is non-finite, then so is <code>a_abs</code> and <code>correct_sign</code> (since changing the first bit of NaN or Infinity results in NaN or infinity).
+                            Now <code>sqrt</code> also has this <a href="https://www.felixcloutier.com/x86/fsqrt">finiteness property</a>, as does <code>decr_min</code>, so if <code>correct_sign</code> is non-finite, then so is the result.
+                        </li>
+                        <li>
+                            The returned interval \([m,M]\), if finite, satisfies \(m\leq M\).
+                            <code>a_abs</code> is always well-formed by <code>abs</code> well-formed condition.
+                            This means that <code>correct_sign</code> is the SIMD vector <code>[A, B, _, _]</code> with <code>A &lt;= B</code>.
+                            Since we assume that the hardware implementation of <code>SQRT</code> is monotonic and accurate to 1ulp, the result is <code>[-sqrt(A), sqrt(B), _, _]</code> such that <code>sqrt(A) &lt; sqrt(B)</code>.
+                        </li>
+                    </ol>
+                </p>
+            </details>
+            <details>
+                <summary>Parallel version</summary>
+                <pre><code class="language-cpp">inline __m128 sqrt_abs_parallel(const __m128 a){
+    // this is exactly the same as sqrt_abs, except we use decr_min_parallel instead and make sure to apply abs to both channels
+    const __m128 a_abs = abs_parallel(a);
+    const __m128 sign_flip = _mm_set_ps(0.0f, -0.0f, 0.0f, -0.0f);
+    const __m128 sqrt = _mm_sqrt_ps(_mm_xor_ps(a_abs, sign_flip));
+    return decr_min_parallel(_mm_xor_ps(sqrt, sign_flip));
+}</code></pre>
+            </details>
+            <details>
+                <summary>Performance</summary>
+                <p>Test script:</p>
+                <pre><code class="language-cpp">volatile float res_sqrt = 0.5f;
+volatile __m128 res_sqrt_i = f32i::interval(0.5f, 0.5f);
+
+// TEST_COUNT = 100,000,000
+// Native test:
+for(std::size_t i = 0; i &lt; TEST_COUNT; ++i){
+    res_sqrt = std::sqrt(res_sqrt);
+}
+// Interval test:
+for(std::size_t i = 0; i &lt; TEST_COUNT; ++i){
+    res_sqrt_i = f32i::sqrt_abs(res_sqrt_i);
+}</code></pre>
+                <p>
+                    Note that we do not check the branching on <code>abs</code> around zero; just as with the performance benchmark for absolute value, we expect the computation \(|[a,b]|\) where \(0\in [a,b]\) to be rare.
+                </p>
+                <div style="width:100%; display:flex; flex-direction:column; align-items: center;">
+                    <img style="width: 50%" src="bool_ops_ia/perf_sqrt.png"/>
+                </div>
+            </details>
+        </details>
+        <p>
+            Performance summary, per operation:
+        </p>
+        <div style="width:100%; display:flex; flex-direction:column; align-items: center;">
+            <img style="width: 65%" src="bool_ops_ia/perf_summary.png"/>
+        </div>
+	</div>
+</body>
+</html>

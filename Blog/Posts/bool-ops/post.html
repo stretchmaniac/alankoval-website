@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+	<meta name='dependencies' content='mathjax header-styles prism'>
+	<meta name='date' content='6/10/2024'>
+	<meta name='tags' content='Math Algorithms'>
+	<meta name='url' content='boolops.html'>
+	<meta name='title' content='A Practical Guide to Boolean Operations'>
+	<meta name='description' content=''>
+	<meta name='thumbnail' content=''>
+	<meta name='identifier' content='bool_ops'>
+</head>
+<body>
+	<div style='padding:25px; width:calc(100% - 50px)'>
+        <span class='info-font'>June 2024 > Math, Algorithms</span>
+        <h1>A Practical Guide to Boolean Operations on Triangle Meshes</h1>
+        <p>
+            The allure of generic set operations applied to your triangle meshes has led you here at last.
+            You want subtractions, intersections and unions for your latest project, ideally supporting chained operations and &mdash; of course &mdash; be <em>blazing</em> fast.
+            It's gotta handle huge meshes.
+            It must be reliable.
+        </p>
+        <p>
+            Bright-eyed, you set out armed with your raw wits and <a href="https://web.stanford.edu/class/cs277/resources/papers/Moller1997b.pdf">M&#246;ller's triangle intersection algorithm</a>.
+            Your <a href="https://en.wikipedia.org/wiki/Bounding_volume_hierarchy">BVH</a> skills are pretty good, and you've already been thinking ahead to some interesting cases, like if a vertex from one mesh lies on a vertex from the other mesh.
+            Floating point error hasn't escaped your notice, and you're careful to keep track of how reliable your geometric comparisons are.
+        </p>
+        <p>
+            It takes you weeks to produce results.
+            Initial tests look good, but there's a few cases that you forgot to consider.
+            <br><br>
+            Complexity increases.
+            <br><br>
+            Your test suite gets larger.
+            <br><br>
+            Complexity continues to increase.
+            <br><br>
+            It slowly dawns on you that fundamental mistakes have been made, but the real truth is that almost every choice you made was flawed.
+        </p>
+        <hr>
+        <p>
+            It is a beautiful but very inconvenient fact that the technicalities of boolean operations dominate implementation.
+            You can't fly a plane without wings (even if you refuse to call them "wings"), and you can't do boolean operations on triangle meshes without a better floating-point philosophy than the various flavors of <a href="https://floating-point-gui.de/errors/comparison/">compare-with-epsilon</a>.
+            The boolean operations problem is even difficult to define properly, with any assumption almost sure to bite you down the line.
+            You might think, for example, that a triangle mesh separates an "inside" from an "outside", and that this is good enough for your use case.
+            Not so.
+            Think you can get away with using an existing library for 2D triangulation?
+            Think again!
+            You're going to have to toss most of your favorite geometry algorithms (including M&#246;ller's, unfortunately) and start rebuilding from the ground up.
+        </p>
+        <p>
+            I <em>almost</em> recommend YOLO-ing it once (as I did above) for purely educational value, but your time is worthwhile, and what is the point of literacy if not to communicate what we need not experience?
+        </p>
+        <p>
+            This post is the landing page for sub-posts of considerable length, each dealing with a particular facet of the boolean operations problem.
+            This is meant to be an educational experience for you, the reader, but also permanent documentation for me, who will be reimplementing the entire algorithm from scratch.
+            Math experience is a bonus, of course, but I'll try to keep extensive math digressions as optional as possible.
+        </p>
+        <h3>Sub-pages</h3>
+        <p>
+            <ul>
+                <li><a href="boolops-interval-arithmetic.html">I. Interval Arithmetic</a></li>
+                <li><a href="boolops-exact-arithmetic.html">II. Exact Arithmetic</a></li>
+            </ul>
+        </p>
+	</div>
+</body>
+</html>

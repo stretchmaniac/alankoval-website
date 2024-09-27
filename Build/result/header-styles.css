@@ -1,7 +1,7 @@
 body{
     margin:0px;
     width:100%;
-    font-size:20px;
+    font-size:15px;
     font-family: 'Jaldi', sans-serif;
 	background-color:rgba(0,0,0,.05);
     line-height: 125%;
@@ -118,6 +118,14 @@ body{
     margin-right: 5px;
     font-weight: bold;
 }
+.lemma {
+    font-style: italic;
+}
+.lemma::before {
+    content: "Lemma.";
+    margin-right: 5px;
+    font-weight: bold;
+}
 
 .different{
     width:calc(100% - 50px);
@@ -190,6 +198,28 @@ li{
 .info-font{
 	font-size:14px;
 }
-code{
-	font-size:15px;
+code {
+    font-size: 13px !important; /* prism monospace font is a bit larger */
+}
+summary {
+    font-weight: bold;
+}
+details details {
+    padding-left: 15px;
+}
+table {
+    border-collapse: collapse;
+    border-bottom: 2px solid black;
+    border-top: 2px solid black;
+}
+th {
+    border-bottom: 1px solid black;
+    text-align: center;
+    padding-left: 5px;
+}
+td {
+    padding: 5px 10px 5px 10px;
+}
+tr:nth-of-type(even) {
+    background-color: rgba(83, 93, 125, 0.1);
 }

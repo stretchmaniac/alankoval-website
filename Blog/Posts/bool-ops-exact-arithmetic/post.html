@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+	<meta name='dependencies' content='mathjax header-styles prism'>
+	<meta name='date' content='9/22/2024'>
+	<meta name='tags' content='Math Algorithms'>
+	<meta name='url' content='boolops-exact-arithmetic.html'>
+	<meta name='title' content='II. Exact Arithmetic'>
+	<meta name='description' content=''>
+	<meta name='thumbnail' content=''>
+	<meta name='identifier' content='bool_ops_ea'>
+</head>
+<body>
+	<div style='padding:25px; width:calc(100% - 50px)'>
+        <span class='info-font'>October 2024 > Math, Algorithms</span>
+        <h1>II. Exact Arithmetic</h1>
+        <p>
+            This is part II of the series <a href="boolops.html">A Practical Guide to Boolean Operations on Triangle Meshes</a>.
+            Part I on interval arithmetic can be found <a href="boolops-interval-arithmetic.html">here</a>.
+        </p>
+        <p>
+            In our last installment, we presented <em>interval arithmetic</em> as part of the solution for the problem of floating point error accumulation.
+            To review, an arithmetic operation on a CPU has associated floating point error because of limited precision.
+            Small errors in calculations can balloon into large errors in decision making given the right circumstances; if there's anything that we've collectively learned as programmers, it's that the right (wrong) circumstances are essentially inevitable.
+            To remedy this, we adopt the following scheme:
+            <ol>
+                <li>Compute arithmetic expressions using interval arithmetic, yielding rigorous lower and upper bounds for the result of the calculation.</li>
+                <li>If we can't make a decision because the resulting interval is ambiguous, repeat the calculation using increased precision or exact arithmetic.</li>
+            </ol>
+            This post will be on (2).
+        </p>
+        <h3>Number Representations</h3>
+        <p>
+            There are a <em>lot</em> of real numbers (aka "infinite decimals").
+            Almost all of them are "non-computable," meaning that we can't come up with any sort of finite representation for them.
+            In other words, they will never be used, listed or uniquely described by anything or anyone.
+            It's not as if we just choose not to use them; we are actually incapable of distinguishing them from the vast swaths of other nearby numbers in a finite amount of time and space.
+            These numbers are by definition boring.
+            If there was something uniquely interesting about a particular number, we'd need only articulate the fact and the number would be computable (in an informal way, for any math readers out there).
+            For example, we care about \(\pi\) for many reasons, one being that it is the sum of the infinite series 
+            \[4\left(1-\frac{1}{3}+\frac{1}{5}-\frac{1}{7}+\frac{1}{9}-\ldots \right)\,. \]
+            This is a representation that we can use to generate digits of \(\pi\). 
+            We can't generate <em>all</em> the digits of \(\pi\), but we can generate as many as we want given enough time and resources.
+            Of course, we can't point out any particular non-computable number to you in a concrete and satisfying way.
+            That would make it computable!
+        </p>
+        <p>
+            Academics love to start off their papers talking about "computable numbers," and for good reason. 
+            It is an impossible goal to attempt to create a representation for arbitrary real numbers on a finite computer.
+            Instead, library designers must restrict themselves to smaller subsets of \(\mathbb{R}\).
+            What subset depends on what you need from your exact arithmetic library. 
+            Let's give a few examples.
+        </p>
+        <h3>Example Number Representation #1: Integers</h3>
+        <h3>Example Number Representation #2: Rationals</h3>
+        <h3>Example Number Representation #3: Algebraic Numbers</h3>
+        <p>
+            Algebraic numbers are exactly the numbers that are roots of polynomials with rational coefficients.
+            Any number that can be written as an expression using rational numbers, basic operations (\(+\), \(-\), \(\times\), \(/\)) and radicals is algebraic, though there are many algebraic numbers that cannot be written like this.
+            <a href="https://en.wikipedia.org/wiki/Straightedge_and_compass_construction">Compass and straightedge construction</a> is a classic application of algebraic numbers, with each point coordinate equal to some expression involving addition, subtraction, multiplication, division, and square roots.
+        </p>
+        <p>
+            The most straightforward (and perhaps intuitive) way to represent radical-like numbers is via their expressions. 
+            This is how we typically write them out, using radicals, addition, multiplication and division. 
+            For example, 
+            \[ \frac{\sqrt{3-2\sqrt{2}}}{\sqrt{5}+(7)^{1/7}} \]
+            is an expression that we might write out to denote a certain number. 
+            There are internal representations of expressions on computers that suffice for this kind of thing, notably abstract syntax trees (ASTs).
+            This might look something like this: 
+        </p>
+        <div style="width:100%; display:flex; flex-direction: column; align-items: center;">
+            <img src="bool_ops_ea/ast.png" style="width:50%"/>
+        </div>
+        <p>
+            One problem with this is that there can be multiple expressions that describe the same number.
+            For example, 
+            \[ \frac{\sqrt{3-2\sqrt{2}}}{\sqrt{5}+(7)^{1/7}}=\frac{\sqrt{-2\sqrt{2}+3}}{(7)^{1/7}+\sqrt{5}}=\frac{\sqrt{2}-1}{\sqrt{5}+(7)^{1/7}}\,. \]
+            Some of these transformations are obvious, like \(3-2\sqrt{2}=-2\sqrt{2}+3\). 
+            Others are less so: \(\sqrt{3-2\sqrt{2}}=\sqrt{2}-1\).
+            This is not an insurmountable hurdle, but it makes it quite difficult to tell whether two numbers are the same. 
+            The bigger problem, depending on the application, is that there are many algebraic numbers which cannot be written in terms of radicals (so-called "unsolvable" algebraic numbers).
+        </p>
+        <p>
+            Algebraics are exactly the real numbers \(\alpha\) such that \(\mathbb{Q}(\alpha)\) is a finite-dimensional field extension over \(\mathbb{Q}\).
+            If \([\mathbb{Q}(\alpha):\mathbb{Q}]=n\) ("the dimension of the field formed by appending \(\alpha\) to \(\mathbb{Q}\) with respect to the base field \(\mathbb{Q}\)"), that means that we can represent any expression involving rationals, \(\alpha\), \(+\), \(-\), \(\times\), and \(/\) as a list of \(n\) rational vector coordinates in the basis \(\{1,\alpha,\alpha^2,\ldots,\alpha^{n-1}\}\).
+            Any number in \(\mathbb{Q}(\sqrt[3]{5})\) can be written as \(a+b\sqrt[3]{5}+c\sqrt[3]{5}^2\), for example, where \(a,b,c\in\mathbb{Q}\).
+            This basis comes from the necessary linear dependence of \(\{1,\alpha,\alpha^2,\ldots,\alpha^n\}\) yielding the minimal polynomial \(p\):
+            \[ p(\alpha)=c_0+c_1\alpha+c_2\alpha^2+\ldots+c_n\alpha^n=0\,, \]
+            together with the canonical isomorphism 
+            \[\mathbb{Q}(\alpha)\cong \mathbb{Q}[X]/(p(X)) \\ \alpha\mapsto \overline{X}\,.\]
+            All this seems is simultaneously extremely opaque to the uninitiated and all too obvious to those familiar with Galois theory or field extensions.
+            The upshot is that roots of rational polynomials are 
+        </p>
+	</div>
+</body>
+</html>

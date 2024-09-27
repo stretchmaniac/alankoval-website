@@ -27,7 +27,7 @@
             direction the car is facing.
         </p>
         <p>
-            There is a further subfield of non-holonomic motion planning that restricts itself to the motion planning of an 
+            There is a further subfield in non-holonomic motion planning that restricts itself to the motion planning of an 
             idealized robot called the "Dubins Car". 
             Named after the mathematician Lester Dubins, this is a robot that traverses \(C^1\) (and almost-everywhere \(C^2\)) paths of the form
             \[ \left\{L(t):\mathbb{R}\to \mathbb{R}^2:|L'(t)|=1\text{ and } |L''(t)|\leq 1 \right\}\,. \]
@@ -150,6 +150,35 @@
         <p>
             In the first and third images above, the blue path is clearly not the shortest between the yellow and red regions; a straight line 
             would do better. The second is more convincing, but we'll need justification.
+        </p>
+        <p>
+            We make the following claim: if the length of the R curve between the yellow/purple boundary and the interior corner is equal to the 
+            length of the R curve between the interior corner and the purple/red boundary, then the R curve in the purple region is the minimum-length 
+            Dubins path from the yellow region to the red region avoiding the out-of-bounds. 
+            Since we can control the ratio between lengths before and after the corner by changing the center of the R arc, we can make this ratio 1 in 
+            the general case. (When we cannot, the path "lifts off" from the corner and becomes a "primitive" Dubins path of type RSL, RSR, LSL or LSR).
+            To make this existence argument precise, some relatively easy continuity arguments are required; I'll leave that as an exercise to the reader. 
+        </p>
+        <div style='display:flex; flex-direction: row; justify-content: space-evenly;'>
+            <img src='dubins_corner/corner_equal_angle.png' style='width:45%;'>
+            <img src='dubins_corner/simplified_corner.png' style='width:45%;'>
+        </div>
+        <p>
+            The left image above shows the optimal configuration, equating the lengths in the purple region before and after the corner.
+            Our job is to show that the blue path contained in the purple region (in this configuration) is the shortest Dubins route between 
+            any point in the yellow region and any point in the red region.
+            The right image shows an equivalent formulation, again with the goal to show that the shortest Dubins route between the yellow and red 
+            regions follows the blue circular arc.
+            Why is this equivalent? Suppose we find a shortest Dubins path \(L\) through some region with out-of-bounds zone \(A\).
+            Suppose also that this path does not intersect some larger out-of-bounds zone \(B\supset A\). 
+            Then it must be that \(L\) is a shortest path through the region given out-of-bounds zone \(B\), since introducing <i>more</i>
+            obstacles cannot possibly result in a shorter path.
+            Here the set \(A\) is the line in the right picture; \(B\) is the gray region in the left, minding the rotation.
+        </p>
+        <p>
+            This equivalent formulation is clear enough so that it is obvious the blue path is shortest; however proving this fact 
+            in a number of words matching its perceived simplicity is a little tricky.
+            I will address this and similarly "easy" problems in my next post <a href='dubins2.html'>here</a>.
         </p>
 	</div>
 </body>

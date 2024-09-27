@@ -6,9 +6,12 @@
 <body>
     <div style='padding:10px'>
         <h1>UMN Schedule to Google Calendar</h1>
-        <h3>Updated Fall 2020</h3>
+        <h3>Updated Fall 2024</h3>
         <p>
-            <i>Now supports recurring events!</i>
+            <i>Thanks to Haroms Terfassa for alerting me to remote errors.</i>
+        </p>
+        <p>
+            <i>Thanks to Rohan Dogra for help debugging the "no class" issue.</i>
         </p>
         <p>
             This script ports the class schedule from MyU to your google calendar. To use:
@@ -100,6 +103,12 @@ function getClassDataForWeek(){
         if(!dayGroup){
             return weekData;
         }
+        // In some instances (e.g. Thanksgiving), myU will have classes for the 
+        // day as normal, but enclose them in a display='none' <a> tag and 
+        // include a message with a ".no-class" class saying something like "No classes today"
+        if(dayGroup.querySelector('.no-class')){
+            continue;
+        }
         // each class is an <a> element
         let classElements = [];
         for(let el of dayGroup.childNodes){
@@ -111,8 +120,15 @@ function getClassDataForWeek(){
         for(let c of classElements){
             let name = c.children[0].innerText;
             let details = c.children[1].innerText;
-            let [type, time, place] = details.split('\n');
-            weekData[day].push({name:name,time:time,place:place,type:type});
+            let splitDetails = details.split('\n');
+            if(splitDetails[1].toLowerCase() === 'remote'){
+                let [type, rem, time, place] = splitDetails;
+                weekData[day].push({name:name,time:time,place:'Remote',type:type});
+            }
+            else {
+                let [type, time, place] = splitDetails;
+                weekData[day].push({name:name,time:time,place:place,type:type});
+            }
         }
     }
     return weekData;
@@ -333,7 +349,7 @@ proceed();</code>
                 <li>Follow step 2 from <a href='https://support.google.com/calendar/answer/37118?hl=en'>Import Events to 
                     Google Calendar</a>.</li>
             </ol>
-            Didn't work for you? Shoot me an email at <code>koval048@umn.edu</code> and I'll give it a look.
+            Didn't work for you? Shoot me an email at <code>alank399@gmail.com</code> and I'll give it a look.
         </p>
         <h1>Excel Formula Tool</h1>
         <p><a href='https://alankoval.com/harry/src/index.html'>Harry's Tool</a></p>
