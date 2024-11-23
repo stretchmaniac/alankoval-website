@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+	<meta name='dependencies' content='mathjax header-styles prism'>
+	<meta name='date' content='11/23/2024'>
+	<meta name='tags' content='Math Algorithms'>
+	<meta name='url' content='karatsuba.html'>
+	<meta name='title' content='Karatsuba Algorithm'>
+	<meta name='description' content=''>
+	<meta name='thumbnail' content=''>
+	<meta name='identifier' content='karatsuba'>
+</head>
+<body>
+	<div style='padding:25px; width:calc(100% - 50px)'>
+        <span class='info-font'>November 2024 > Math, Algorithms</span>
+        <h1>The Karatsuba Algorithm</h1>
+        <p>
+            This is a spin-off page of <a href="boolops-exact-arithmetic.html">II. Exact Arithmetic</a>, the second part of the series on triangle mesh boolean operations. 
+        </p>
+        <p>
+            The Karatsuba algorithm (or Toom-Cook variant 2-2, or simply Toom22), is a sub-quadratic algorithm for multiplying multi-precision integers.
+            Multi-precision integers are typically represented as arrays or lists of 32-bit or 64-bit unsigned integers.
+            One can view such a list as a very large collection of big-endian binary digits or &mdash; if one prefers the equivalent formulation &mdash; a representation in base \(2^{32}\) or \(2^{64}\) with each "digit" (or "word") an entry in the list. 
+            Taking the second option in base 64, two numbers \(a=\sum_{j=0}^p a_j 2^{64j}\) and \(b=\sum_{j=0}^q b_j 2^{64j}\) have product 
+            \[ ab=\left(\sum_{j=0}^p a_j 2^{64j}\right)\left(\sum_{j=0}^q b_j 2^{64j}\right)=\sum_{j=0}^p \sum_{k=0}^q a_jb_k 2^{64(j+k)}\,. \]
+            Each sub-product \(a_j b_k\) is relatively easy to calculate (on Intel there is a 2-word <code>_mulx_u64</code> intrinsic for this very purpose), so one way to go about this multiplication is to properly align each product \(a_j b_k\) to the word corresponding to the \(2^{64(j+k)}\) place before adding it to an accumulator. 
+            This is the so-called "grade-school" method, and it requires \((p+1)(q+1)\) multiplications and additions.
+        </p>
+        <p>
+            Of the several options for fast multi-precision multiplication algorithms (see the linked Exact Arithmetic page under "Multiplication" for more of them), there is a range of \(p\) and \(q\) for which the Karatsuba algorithm, aka Toom22, is most efficient. 
+            Broadly speaking, it groups the multiplications in the grade-school method in such a way as to trade multiplication for addition.
+            More concretely, the easiest (but perhaps most mysterious) way to approach the Karatsuba algorithm is via the following observation:
+            \[
+                \begin{align*}
+                    (w+2^Nx)(y+2^Nz)&=wy+2^N(xy+wz)+2^{2N}xz \\
+                    &= wy+2^N((x+w)(y+z)-wy-xz)+2^{2N}xz
+                \end{align*}
+            \]
+            We calculate only three products &mdash; \(wy\), \(xz\) and \((x+w)(y+z)\) &mdash; instead of the expected four pairwise products.
+            This is great news, since addition is far cheaper than multiplication.
+            To transform this observation into a workable algorithm, we apply a recursive divide-and-conquer method in the following way: 
+            <ol>
+                <li>Given integers \(a\) and \(b\), if \(a\) and \(b\) are small enough according to a reasonable heuristic, calculate \(ab\) using the grade-school method and return.</li>
+                <li>Otherwise, split \(a\) and \(b\) into two parts each, writing \(a=w+2^Nx\) and \(b=y+2^Nz\). Here, \(N\) is a multiple of 64 so that this decomposition is literally splitting the word list in two.</li>
+                <li>Calculate \(wy\), \(xz\) and \((x+w)(y+z)\) recursively. Subtract \(wy\) and \(xz\) from \((x+w)(y+z)\), and combine the results using bit shifting and addition to produce \(ab\).</li>
+            </ol>
+        </p>
+        <h3>Polynomial Rings</h3>
+        <p>
+            The Karatsuba algorithm is also named Toom22 because it is a specific example of a Toom-Cook procedure, which more generally splits \(a\) and \(b\) into \(n\) parts.
+            A better way to approach the Karatsuba algorithm that extends to the broader Toom-Cook class is via polynomial rings and the Chinese Remainder Theorem.
+            The "road map," if you will, looks like this: 
+            \[
+            \mathbb{Z}\cong \mathbb{Z}[\beta]/(2^N-\beta)\to\mathbb{Z}[\beta]\to\mathbb{Z}[\beta]/(\beta^2-\beta)\cong(\mathbb{Z}[\beta]/(\beta))\times(\mathbb{Z}[\beta]/(\beta-1))\,.
+            \]
+            We start with the integers \(\mathbb{Z}\), reinterpret them in base \(2^N\) (\(\mathbb{Z}[\beta]/(2^N-\beta)\)), treat \(2^N\) as a formal variable (\(\mathbb{Z}[\beta]\)), consider this polynomial within a suitably large modular ring (\(\mathbb{Z}[\beta]/(\beta^2-\beta)\)), and finally map to an isomorphic ring with the Chinese Remainder Theorem (\((\mathbb{Z}[\beta]/(\beta))\times(\mathbb{Z}[\beta]/(\beta-1))\)). 
+        </p>
+        <p>
+            Before we begin in earnest, let's consider multiplication in a ring as viewed through a homomorphism. 
+            It's straightforward to conceptualize the equivalence of multiplication in a ring isomorphic to another, since the isomorphism \(\varphi\) has a two-sided inverse and 
+            \[ ab=\varphi^{-1}(\varphi(a))\varphi^{-1}(\varphi(b))=\varphi^{-1}(\varphi(a)\varphi(b))\,. \]
+            We start in some ring \(R\) containing \(a\) and \(b\), map \(a\) and \(b\) to another ring \(S\) via \(\varphi\), perform the multiplication in \(S\) as \(\varphi(a)\varphi(b)\), then map back to \(R\) with \(\varphi^{-1}\). 
+        </p>
+        <p>
+            Consider, however, a non-bijective homomorphism \(\varphi:R\to S\).
+            For \(a,b\in R\), we can say that \(\varphi(ab)=\varphi(a)\varphi(b)\). 
+            Insofar as \(\varphi^{-1}\) is a multi-valued function, we have \(ab\in \varphi^{-1}(\varphi(a)\varphi(b))\).
+            The inverse image \(\varphi^{-1}(s)\) is a coset \(r+\text{ker}(\varphi)\subset R\); to identify \(ab\) we need to pick out the correct entry from the coset \(\varphi^{-1}(\varphi(a)\varphi(b))\). 
+        </p>
+        <p>
+            On the other hand, suppose we have a surjective homomorphism \(\varphi:S\to R\).
+            For \(a,b\in R\), we can pick any elements \(s_a\) and \(s_b\) in \(S\) with \(\varphi(s_a)=a\) and \(\varphi(s_b)=b\).
+            Then \(ab=\varphi(s_a)\varphi(s_b)=\varphi(s_as_b)\).
+            This is the easier case.
+            Instead of needed to identify a correct entry from a pre-image, we can pick <em>any</em> entry from a pre-image and correctly generate \(ab\).
+        </p>
+        <p>
+            With that out of the way, let's return to our road map.
+            \[
+                \mathbb{Z}\underset{\varphi_1}{\cong} \mathbb{Z}[\beta]/(2^N-\beta)\underset{\varphi_2}{\leftarrow}\mathbb{Z}[\beta]\underset{\varphi_3}{\to}\mathbb{Z}[\beta]/(\beta^2-\beta)\underset{\varphi_4}{\cong}(\mathbb{Z}[\beta]/(\beta))\times(\mathbb{Z}[\beta]/(\beta-1))
+            \]
+            The first isomorphism, \(\varphi_1\), maps an integer \(a\) to the coset \(a+(2^N-\beta)\mathbb{Z}[\beta]\). 
+            It has two-sided inverse \(p(\beta)+(2^N-\beta)\mathbb{Z}[\beta]\mapsto p(2^N)\).
+        </p>
+        <p>
+            The first homomorphism is backwards: \(\varphi_2:\mathbb{Z}[\beta]\to \mathbb{Z}[\beta]/(2^N-\beta)\). 
+            To correctly identify a product \(ab\) in \(\mathbb{Z}[\beta]/(2^N-\beta)\), we need to retrieve any pre-image \(\varphi_2^{-1}(a)\) and \(\varphi_2^{-1}(b)\). 
+            However, not all choices will be equally effective for our algorithm. 
+            For our purposes, choose the polynomial \(p_a\in \mathbb{Z}[\beta]\) in the coset \(a\) that contains only non-negative integer coefficients less than \(2^N\). 
+            This is equivalent to expressing an integer representative \(z\) of \(a\) in base \(2^N\), since 
+            \[
+                \begin{align*}
+                    z+(2^N-\beta)\mathbb{Z}[\beta]&=\sum_{i=0}^p z_i2^{iN}+(2^N-\beta)\mathbb{Z}[\beta] \\
+                    &= \sum_{i=0}^p z_i\beta^i+(2^N-\beta)\mathbb{Z}[\beta]
+                \end{align*}\,. 
+            \] 
+        </p>
+        <p>
+            Our next homomorphism, \(\varphi_3\), is the canonical one sending \(p(\beta)\mapsto p(\beta)+(\beta^2-\beta)\mathbb{Z}[\beta]\). 
+            For polynomials \(p\) and \(q\) in \(\mathbb{Z}[\beta]\), we can only determine \(pq\) if we correctly identify the proper entry in \(\varphi_3^{-1}(\varphi(p)\varphi(q))\).
+            This is where our choice of \(N\) becomes important. 
+            Suppose \(a\) and \(b\) are integers. 
+            Our map \(\varphi_2^{-1}\circ \varphi_1\) so far consists of writing \(a\) and \(b\) in base \(2^N\), then replacing every instance of \(2^N\) with \(\beta\).
+            By choosing \(N\) large enough so that \(a\) and \(b\) have no \(2^{N+1}\) term or larger, we can ensure that \(p\) and \(q\) have no term larger than \(\beta\).
+            In particular, \(a=w+x2^N\) maps to \(p(\beta)=w+x\beta\), and \(b=y+z2^N\) maps to \(q(\beta)=y+z\beta\). 
+            Then \(pq\) is, at most, a quadratic.
+            To completely identify \(pq\) from a coset \(s(\beta)+(\beta^2-\beta)\mathbb{Z}[\beta]\), we first convert \(s(\beta)\) to a lowest-degree representative \(c+d\beta\), and note by degree considerations that 
+            \[ p(\beta)q(\beta)=c+d\beta + \gamma(\beta^2 - \beta)=\gamma \beta^2 + (d-\gamma)\beta + c\,. \]
+            The \(\gamma\) term must be \(xz\), since the quadratic term of \(pq\) comes (solely) from \(x\beta\cdot z\beta=xz\beta^2\). 
+        </p>
+        <p>
+            Finally, we arrive at the meat-and-potatoes homomorphism, the isomorphism \(\varphi_4\) provided by the Chinese Remainder Theorem because \(\beta\) and \(\beta-1\) are coprime in \(\mathbb{Z}[\beta]\). 
+            For a representative \(c+d\beta\) in \(\mathbb{Z}[\beta]/(\beta^2-\beta)\), \(\varphi_4\) acts via 
+            \[
+            \begin{align*}
+                \varphi_4(c+d\beta+(\beta^2-\beta)\mathbb{Z}[\beta])&=(c+\beta\mathbb{Z}[\beta],c+d+(\beta-1)\mathbb{Z}[\beta]) \\
+                \varphi_4^{-1}(q(\beta)+\beta\mathbb{Z}[\beta], w(\beta)+(\beta-1)\mathbb{Z}[\beta])&=q(0)+(w(0)-q(1))\beta + (\beta^2-\beta)\mathbb{Z}[\beta]
+            \end{align*}
+            \]
+            Eliding the cluttered coset notation, this is \(\varphi_4(c+d\beta)=(c, c+d)\) and \(\varphi^{-1}(q,w)=q+(w-q)\beta\).
+        </p>
+        <p>
+            Now let's put it all together. 
+            Two integers \(a\) and \(b\) are written in base \(2^N\) notation as \(a=w+x2^N\) and \(b=y+z2^N\).
+            These are converted into polynomials \(p(\beta)=w+x\beta\) and \(q(\beta)=y+z\beta\), reduced modulo \(\beta^2-\beta\) (so, they don't change), then sent to the pairs \((w,w+x)\) and \((y,y+z)\) over \(\varphi_4\). 
+            The multiplication happens here, with 
+            \[ (w,w+x)\times (y,y+z)=(wy, (w+x)(y+z))\,. \]
+            This is sent back over \(\varphi_4^{-1}\), resulting in the polynomial representative \(wy+((w+x)(y+z)-wy)\beta\).
+            To find the correct representative in \(\varphi_3^{-1}(wy+((w+x)(y+z)-wy)\beta)\), we form \(\gamma \beta^2 + (d-\gamma)\beta + c\) with \(\gamma=xz\), \(c=wy\), and \(d=(w+x)(y+z)-wy\). 
+            This results in the polynomial \(xz \beta^2 + ((w+x)(y+z)-wy-xz)\beta + wy\). 
+            Mapping through \(\varphi_2^{-1}\) is the evaluation map \(\beta \mapsto 2^N\), resulting in 
+            \[ ab=xz 2^{2N} + ((w+x)(y+z)-wy-xz)2^N + wy\,. \]
+        </p>
+        <p>
+            This seems like a lot of work for such a simple expression! 
+            You might change your mind, however, after attempting to rearrange \((a+b2^N+c2^{2N})(d+e2^N+f2^{2N})\) in a way that uses only five \(N\)-bit multiplications.
+            Indeed, larger Toom-\(n\) variants would be extremely difficult to generate by hand.
+        </p>
+        <h3>Implementation Outline</h3>
+        <p>
+
+        </p>
+	</div>
+</body>
+</html>

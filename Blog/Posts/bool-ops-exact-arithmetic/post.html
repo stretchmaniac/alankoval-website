@@ -49,11 +49,9 @@
             It is an impossible goal to attempt to create a representation for arbitrary real numbers on a finite computer.
             Instead, library designers must restrict themselves to smaller subsets of \(\mathbb{R}\).
             What subset depends on what you need from your exact arithmetic library. 
-            Let's give a few examples.
+            Let's give an example.
         </p>
-        <h3>Example Number Representation #1: Integers</h3>
-        <h3>Example Number Representation #2: Rationals</h3>
-        <h3>Example Number Representation #3: Algebraic Numbers</h3>
+        <h3>Example Number Representation: Algebraic Numbers</h3>
         <p>
             Algebraic numbers are exactly the numbers that are roots of polynomials with rational coefficients.
             Any number that can be written as an expression using rational numbers, basic operations (\(+\), \(-\), \(\times\), \(/\)) and radicals is algebraic, though there are many algebraic numbers that cannot be written like this.
@@ -88,9 +86,1155 @@
             \[ p(\alpha)=c_0+c_1\alpha+c_2\alpha^2+\ldots+c_n\alpha^n=0\,, \]
             together with the canonical isomorphism 
             \[\mathbb{Q}(\alpha)\cong \mathbb{Q}[X]/(p(X)) \\ \alpha\mapsto \overline{X}\,.\]
-            All this seems is simultaneously extremely opaque to the uninitiated and all too obvious to those familiar with Galois theory or field extensions.
-            The upshot is that roots of rational polynomials are 
+            For algebraic numbers \(\alpha\) and \(\beta\) with minimal polynomials \(p_\alpha\) and \(p_\beta\), their sum \(\alpha+\beta\) is in \(\mathbb{Q}(\alpha,\beta)=\mathbb{Q}(\alpha)(\beta)\), which has basis a subset of 
+            \[ \bigcup_{i,j} \{\alpha^i \beta^j\}\,. \]
+            Using linear algebra over \(\mathbb{Q}(\alpha,\beta)\) (essentially using \(p_\alpha(\alpha)=0\) and \(p_\beta(\beta)=0\)), we can determine a linear dependence of the set 
+            \[ \left\{ \alpha+\beta,(\alpha+\beta)^2,(\alpha+\beta)^3,\ldots \right\}\,, \]
+            which is the minimal polynomial of \(\alpha+\beta\).
         </p>
+        <p>
+            All this seems is simultaneously extremely opaque to the uninitiated and all too obvious to those familiar with Galois theory or field extensions.
+            The upshot is that we can find the minimal polynomial of \(\alpha+\beta\) given <em>only</em> the minimal polynomials \(p_\alpha\) and \(p_\beta\) for \(\alpha\) and \(\beta\), respectively, using linear algebra over rational vector spaces.
+            Turns out you can compute the minimal polynomial for \(\alpha\beta\) too. 
+            So we can represent algebraic numbers via their exact minimal polynomials, which requires only an exact integer or rational representation.
+            While a minimal polynomial isn't quite enough to generate a floating point approximation of an algebraic number (one needs an <em>isolating interval</em>, for example, to specify which root), this gives you a decent idea of the complexity that can go into number representations.
+        </p>
+        <h3>Number Representations for Boolean Operations</h3>
+        <p>
+            Doing linear algebra over non-standard fields is not a speedy process.
+            Generally, the more numbers you seek to represent, the slower basic operations like addition and multiplication become.
+            While not a universal rule, this is basically because larger number systems (like algebraics) depend on smaller number systems (like rationals).
+            Our strategy, then, is to represent the absolute bare minimum set of numbers that we need to do boolean operations on triangle meshes.
+        </p>
+        <p>
+            The answer is, well, that we only need rational arithmetic and to represent arbitrary numbers in \(\mathbb{Q}\) (the rationals).
+            Why?
+            The only thing I can tell you is that I've done it before, and it turns out that wherever you'd ordinarily use a square root, atan2, sine, etc., there are tricks to avoid them.
+            Ultimately it makes sense, as boolean operations on triangle meshes are somehow linear things, but we'll get more into that later.
+        </p>
+        <p>
+            Rational numbers are implemented as the <a href="https://en.wikipedia.org/wiki/Field_of_fractions">Field of Fractions</a> over the integers. 
+            That is, every rational is a numerator and a non-zero denominator having no common factors, each represented as an exact integer.
+            Thus rationals are dependent on arbitrary precision integers, which we will cover before rationals.
+        </p>
+        <h2>Arbitrary Precision Integers</h2>
+        <p>
+            There are many arbitrary precision integer libraries out there, e.g., <a href="https://gmplib.org/">GMP</a> or <a href="https://docs.oracle.com/javase/8/docs/api/?java/math/BigInteger.html">BigInteger</a>. 
+            These are sufficient for our needs (in fact, I used BigInteger in my previous Java implementation).
+            However, there are optimizations that can be done utilizing the particulars of the boolean operations algorithm.
+            In particular, a substantial proportion of exact operations involve multiplication and addition of 32-bit floating point numbers. 
+            For example, a side-of-plane test involves adding a number of three-products \(a\times b\times c\) of these floats.
+            We should utilize double-precision hardware multiplication where possible.
+            In many cases, we can track the required precision exactly and avoid over-allocating memory. 
+            Finally, we know that no computation will exceed the precision thresholds to qualify for extra-fancy arithmetic algorithms like <a href="https://en.wikipedia.org/wiki/Toom%E2%80%93Cook_multiplication">Toom-Cook</a> multiplication bigger than Toom-2 or anything involving FFTs, so we can simplify things a bit.  
+        </p>
+        <h3>Representation Overview</h3>
+        <p>
+            Our goal is to efficiently represent integers in the range 
+            \[[-2^{2^{30}}, 2^{2^{30}}]\,. \]
+            This is not arbitrarily large; your computer likely has enough memory to store integers far greater than this.
+            But actually representing uniformly-sampled integers of magnitude \(2^{2^{30}}\) takes upwards of 130 megabytes of space.
+            We'd have to multiply about 17 million 64-bit integers together before reaching the limits here. 
+            If we end up dealing with numbers this large, there's little hope that our boolean operations algorithm will be competitive.
+            Nonetheless, we'll have to keep in the back of our minds our magnitude limits.
+        </p>
+        <p>
+            Conveniently, most of us already think of integers in a way that doesn't inherently impose size caps.
+            We don't allocate sections of memory to numbers like computers do. 
+            Instead, we think in <em>digits</em>.
+            \[23\,567\,812\,110\]
+            You've probably never explicitly considered the number above.
+            Certainly you've never memorized a multiplication or division table for 23,567,812,110.
+            Yet you have no problem gauging its relative size and some of its properties.
+            You'd even be able to add, subtract, multiply and divide with this number effectively, though perhaps it might take some effort.
+            The reason we can do this is that we have no problem conceptualizing arbitrarily large strings of digits &mdash; at least in theory &mdash; and we have grade-school algorithms for basic arithmetic operators (\(+\), \(-\), \(\times\), \(/\)) that extend memorized tables to bigger numbers.
+        </p>
+        <p>
+            We have a concept of <em>carrying</em> digits as it applies to addition, for example.
+            If we want to find \(42 + 39\), we'd find ourselves only needing to compute \(2+9\) (carrying the one) and \(4+3+(1)\).
+            Similarly, we can subtract via borrowing, multiply via pairwise digit multiplication, carrying, and addition, and divide via long division. 
+            Never do we need to memorize anything beyond single-digit operations, like \(8\times 4=32\) or \(72/8=9\). 
+        </p>
+        <p>
+            This is exactly what we'll accomplish using a computer. 
+            On occasion we'll use fancier algorithms than the ones we learned in grade school, but the main difference will be the level of "memorization" that computers can achieve.
+            While we can only reasonably handle single-digit operation tables, computers can "look-up" any addition, multiplication, division or subtraction that fits in a 64-bit integer using hardware.
+            The result is that whereas we think in base ten digits (zero through nine), our arbitrary integer program will use base \(2^{64}\). 
+            It's worth spending a few minutes thinking about the implications of such a massive increase in base. 
+            The number with digit string \(ab\) is equal to \(a\cdot 2^{64} + b\), with \(a\) and \(b\) consisting of 64-bit integers in the range \([0,2^{64}-1]\).
+            Because each "digit" in base \(2^{64}\) consists of 64 binary digits, folks typically call \(a\) and \(b\) "words" or "limbs," leaving "digit" to describe only the binary constituents. 
+            "Word," in this case, is appropriate since 64 bits is a common <a href="https://en.wikipedia.org/wiki/Word_(computer_architecture)">machine word</a> size.
+            \[ \underbrace{110\ldots 0}_{k^\text{th}\text{ word}} \quad \underbrace{010\ldots 1}_{(k-1)^\text{th}\text{ word}} \quad \ldots \quad \underbrace{101 \ldots 1}_{0^\text{th}\text{ word}}\,^{\leftarrow \,0^\text{th}\text{ digit of }0^\text{th}\text{ word}} \]
+        </p>
+        <p>
+            Our strategy will be to maintain a list "words" \([w_k, w_{k-1}, \ldots, w_1, w_0]\) together with a sign value \(s\in \{-1,0,1\}\), representing the target integer
+            \[ s\sum_{i=0}^k w_i\cdot 2^{64i}\,. \]
+        </p>
+        <p>
+            A handy fact about writing numbers in base \(2^{64}\), is that a number \(z\) with words \([w_k,w_{k-1},\ldots,w_0]\) has binary representation equal to the binary representations of \(w_k, w_{k-1}, \ldots, w_0\) appended together.
+            This strategy of viewing numbers in base \(2^n\) as actually in base \(2\) is somewhat ubiquitous in hexadecimal or octal numbers. 
+            Writing each word \(w_i\) in binary as \(w_i=\sum_{j=0}^{64} b_{i,j}2^j\), we can see why this is:
+            \[\sum_{i=0}^k w_i2^{64i}=\sum_{i=0}^k \sum_{j=0}^{64}b_{i,j}2^{64i+j}=\sum_{m=0}^{64k-1}b_{\lfloor m/64\rfloor,m\bmod64}2^m\,.\]
+            Alternatively, we can see this via the ring isomorphism 
+            \[
+            \begin{align*}
+                \mathbb{Z}[x]/(2^{64}-x)&\cong \mathbb{Z}[x]/(2-x) \\
+                x&\rightarrow x^{64} \\
+                2&\leftarrow x
+            \end{align*}\,.
+            \]
+            Of course, this is only really illuminating if you understand what ideal representatives in \(\mathbb{Z}[x]/(2-x)\) can look like, which is basically what we're trying to show in the first place. 
+            Anyway, as is sometimes the case for algebra, the more one tries to explain things the more confusing it appears, so we'll leave it at that.
+        </p>
+        <h3>Representation Details</h3>
+        <p>
+            Each word will be a 64-bit, unsigned integer (<code>uint64_t</code> in <code>C++</code>).
+            In order to maintain the ability to efficiently process both small, stack-allocated exact integers and large, heap-allocated exact integers, we hold words in a fixed-size array <code>base_value</code> with overflow in an extensible <code>std::vector</code> list data structure.
+            When we know beforehand the maximum precision necessary, we can save memory and compute cycles by manually setting the size of <code>base_value</code> and omitting the list data structure <code>extended_value</code> altogether: 
+            <pre><code class="language-cpp">template&lt;int base_allocation = 0, bool extensible = true&gt; 
+class integer ... {}
+...
+// The sum of arbitrary numbers of integer may require many 
+// words to represent.
+exact::integer&lt;&gt; a(0, 0); // a = 0
+for(const exact::integer&lt;&gt; b : to_sum){
+    a.add_local(b);
+}
+
+// The product of two 1-word integers fits in a 2-word integer.
+exact::integer&lt;2, false&gt; c(15, 0); // c = 15
+exact::integer&lt;2, false&gt; d(1, 63); // d = 2^63
+exact::integer&lt;2, false&gt; e = c.multiply(d);</code></pre>
+            This is a bit dangerous, of course, since one must not only be confident that the result of the computation does not exceed a fixed number of words, but also that any <em>intermediate</em> calculation &mdash; possibly hidden &mdash; also does not require additional precision. 
+            For this one must know the inner workings of the arithmetic library quite well.
+            But since speed is our #1 priority, this is surely a challenge we can rise to!
+            Even so, we'll find the number of applications of non-extensible exact integers to be relatively small, if important. 
+        </p>
+        <p>
+            We maintain the number of words comprising the exact integer in an <code>int32_t</code> member <code>word_count</code>.
+            The precision of <code>word_count</code> is the only limiting factor to the maximum representable integer; should the need arise, simply changing the type to <code>int64_t</code> would dramatically increase the capacity.
+            Though as mentioned previously, there is little chance that this would be necessary.
+        </p>
+        <p>
+            In addition to a straightforward <code>int signum</code> flag, we implement a well-known strategy of keeping a separate order-of-magnitude <code>int32_t</code> value <code>shift</code> in addition to the word array.
+            This is very much akin to scientific notation, where we save quite a bit of ink writing \(1\,230\,000\,000\) as \(1.23\cdot 10^{9}\).
+            But since we're working in base \(2^{64}\), <code>shift</code> encodes how many powers of \(2^{64}\) to multiply the word string by.
+            More formally, a sign value \(s\), words \([w_k, w_{k-1}, \ldots, w_0]\) and non-negative shift \(p\) represents the exact integer 
+            \[s\cdot 2^{64p} \sum_{i=0}^k w_i\cdot 2^{64i}\,.\]
+            This is also entirely analogous to the binary left-shift operator <code>&lt;&lt;</code>; viewed as individual base-64 digits this is 
+            \[s\cdot (w_kw_{k-1}\ldots w_0 &lt;&lt; p)\,. \]
+            With the introduction of <code>shift</code>, we introduce ambiguity in our representation. 
+            The number \([s,w_1,w_0,p]=[1,12,0,0]\) is equal to \([s,w_1,w_0,p]=[1,0,12,1]\).
+            To remove this ambiguity, and improve performance of shift-independent operations (like multiplication), we maintain the "maximal shift property." 
+            Of all representations \(R_1,R_2,\ldots,R_q\) for some non-zero integer \(z\), there is exactly one with maximal shift value. 
+            This one is canonical, and to keep all exact integers in canonical representation, all we have to do is remove trailing zero words and update <code>shift</code> accordingly.
+        </p>
+        <details>
+            <summary>C++ exact integer header file snippet</summary>
+            <pre><code class="language-cpp">#ifndef INTEGER_HPP
+#define INTEGER_HPP
+
+#include &lt;stdint.h&gt;
+#include &lt;array&gt;
+#include &lt;vector&gt;
+#include &lt;string&gt;
+
+namespace exact {
+
+    // The existence of "extended_value" will be templated for advanced usage, by 
+    // using one of the following structs as an inherited parent
+    struct extensible_int {
+        std::vector&lt;uint64_t&gt; extended_value {};
+    };
+    struct nonextensible_int {};
+
+    /**
+     * This is a class for representing integers in the range
+     *      [-2^(2^30), 2^(2^30)],
+     * that is, very large but not arbitrarily-large integers.
+     * 
+     * The template value "base_size" indicates the capacity (in words) of the fixed-size array base_value, 
+     * with any overflow spilling over into extended_value.
+     * 
+     * The template value "extensible" indicates whether extended_value will be available for use. 
+     * If extensible is set to false, any overflow or carry from base_value will result in undefined behavior,
+     * but you'll save 24 bytes of memory use per exact integer instance.
+     * 
+     * Integers will be represented internally by a bitstring split up into uint64_t chunks, contained 
+     * in base_value and extended_value. This big-endian bitstring occupies 64*word_count bits in base_value and 
+     * extended_value, in the order
+     *    base_value[0], base_value[1], ..., base_value[base_size - 1], extended_value[0], ..., extended_value[word_count - 1].
+     * If word_count &lt;= base_size, then the bitstring only occupies base_value and extended_value is empty. 
+     * 
+     * This class uses x86 intrinsics.
+     * 
+     * @author Alan Koval
+     */
+    template&lt;int base_size = 0, bool extensible = true&gt;
+    class integer : std::conditional_t&lt;extensible, extensible_int, nonextensible_int&gt; {
+        public:
+            /**
+             * Constructs the exact integer equal to 
+             *    value * 2^two_power
+             * 
+             * two_power must be positive.
+             * 
+             * This constructs an internal representation with maximal shift and minimum 
+             * number of words
+             */
+            integer(const int64_t value, const int32_t two_power);
+
+            /**
+             * Constructs the zero integer
+             */
+            integer(): signum(0), first_bit_offset(-1), word_count(0), shift(0) {};
+
+            /**
+             * Returns the current (left) shift for this exact integer.
+             * An integer is represented internally as a bitstring b together with a shift s, 
+             * so that the actual value, neglecting sign, is 2^(64*s) * b
+             */
+            int32_t get_shift() const;
+
+            /**
+             * Returns -1 if this integer is negative, 0 if this integer is zero, 1 if this integer is positive
+             */
+            constexpr int sign() const;
+        private:
+            /**
+             * signum == 1 if this number is positive,
+             * signum == -1 if this number is negative,
+             * signum == 0 if this number is zero.
+             */
+            int32_t signum {0};
+            /**
+             * This stores the left-shift value p such that the value of this integer is 
+             *     signum * 2^(64p) * sum_i w_i 2^(64i),
+             * where w_i is this.word(this.word_count - 1 - i).
+             * 
+             * Note that constructor uses exponents of base 2, whereas shift encodes an exponent of base 2^64.
+             * 
+             * While shift must be non-negative, we use int32_t to facilitate taking differences of shift values,
+             * which is a common operation.
+             */
+            int32_t shift {0};
+            /**
+             * This is the first non-zero bit in the words making up this integer.
+             * For example, if first_bit_offset == 76, then the first non-zero bit occurs in 
+             * this.word(1) at binary digit 76 - 64 = 12.
+             * 
+             * If this exact integer is zero, then first_bit_offset is -1.
+             */
+            int32_t first_bit_offset {0};
+            /**
+             * This is the number of words in use by the integer.
+             * If extended_value is non-empty, then word_count is equal to base_size + extended_value.size().
+             * Otherwise, word_count &lt;= n, and any value base_value[k] with k &gt;= word_count means nothing.
+             */
+            int32_t word_count {0};
+            /**
+             * One of the containers holding word values, with the other being extended_value (if extensible == true).
+             * Please note that base_value (possibly extended by extended_value) is in *big-endian* order. 
+             * The most significant word is base_value[0].
+             */
+            std::array&lt;uint64_t, base_size&gt; base_value{};
+
+            /**
+             * Obtains a reference to the (index)th word of this representation.
+             * index must be non-negative and less than word_count. No bounds checking is performed.
+             */
+            uint64_t& word(const int32_t index);
+            /**
+             * The read-only version of word(int32_t index) above.
+             */
+            uint64_t word_r(const int32_t index) const;
+            /**
+             * adds another entry to the word list, increases word_count by 1, returns a reference to the new word,
+             * which has been set to zero.
+             * 
+             * NOTE: calls to push_word may invalidate existing references to words, see 
+             * https://en.cppreference.com/w/cpp/container/vector/emplace_back
+             */
+            uint64_t& push_word();
+            /**
+             * deletes the last word, decreases word_count by 1. Does nothing if word_count is already 0
+             * 
+             * NOTE: calls to push_word may invalidate existing references to words, see 
+             * https://en.cppreference.com/w/cpp/container/vector/emplace_back
+             */
+            void pop_word();
+    };
+}
+
+#endif</code></pre>
+        </details>
+        <h3>Implementation Details</h3>
+        <p>
+            Now that we have a solid internal representation for large integers, we can implement the various operations we expect to use on integers.
+            This includes addition, subtraction, multiplication, and integer division.
+            We build these up using a number of smaller operations, including negation, left shift, right shift, comparison, and bit-wise AND.
+            Looking forward to its use in exact rational arithmetic, we'll also need the greatest common divisor (GCD) and least common multiple (LCM) of two large integers. 
+        </p>
+        <p>
+            For each operation, we'll verify that <code>first_bit_offset</code> and <code>signum</code> are correctly set, and that <code>shift</code> is maximal.
+            The only other <code>exact::integer</code> members, <code>base_value</code>, <code>extended_value</code>, and <code>word_count</code>, are maintained by the functions <code>push_word</code>, <code>pop_word</code> and the reference retrieval function <code>word</code>. 
+            All changes to the number of words are made through these push and pop functions, so we don't need to explicitly track <code>word_count</code> through the other operations.
+        </p>
+        <details>
+            <summary>Negation</summary>
+            <p>
+                Since the sign of the integer is equal to the member <code>signum</code>, we need only make the transformation 
+                \[ \begin{align*} 
+                    (\text{signum}=1)&\to (\text{signum}=-1) \\
+                    (\text{signum}=0)&\to (\text{signum}=0) \\
+                    (\text{signum}=-1)&\to (\text{signum}=1)
+                \end{align*}\,, \]
+                that is,
+                <pre><code class="language-cpp">/**
+ * Mutates the integer instance by multiplying by -1.
+ */
+template&lt;int n, bool ext&gt;
+exact::integer&lt;n, ext&gt;&amp; exact::integer&lt;n, ext&gt;::negate_local(){
+    this-&gt;signum *= -1;
+    return *this;
+}</code></pre>
+                Since no word is changed, added, or removed, <code>first_bit_offset</code> remains correct and <code>shift</code> remains maximal.
+            </p>
+        </details>
+        <details>
+            <summary>Left shift</summary>
+            <p>
+                As with the binary case, left shift is multiplication by a power of two. 
+                In a "pure" sense, left shift in base \(2^{64}\) ought to be multiplication by some integer \(2^{64k}\), so that we shift words to the left, as we do with digits in binary.
+                However, it is sometimes convenient to allow multiplication by other powers of two. 
+            </p>
+            <pre><code class="language-cpp">/**
+ * Mutates the integer instance by multiplying by 2^(64 * shift_bulk + shift_excess)
+ *
+ * shift_bulk and shift_excess must be non-negative, with shift_excess not exceeding 63.
+ */
+template&lt;int n, bool ext&gt;
+exact::integer&lt;n, ext&gt;&amp; exact::integer&lt;n, ext&gt;::shift_l_local(const int32_t shift_bulk, const int32_t shift_excess){
+    // left shift, as opposed to right shift, will never change signum
+    this-&gt;shift += shift_bulk;
+
+    if(shift_excess == 0){
+        return *this;
+    }
+
+    // do smaller word bit-shifts
+    const int32_t shift_excess_inv = 64 - shift_excess;
+    if(this-&gt;first_bit_offset &gt;= shift_excess){
+        // we have enough zeros in the first word to shift left as much as needed
+        for(int32_t i = 0; i &lt; this-&gt;word_count; ++i){
+            uint64_t&amp; a = this-&gt;word(i);
+            const uint64_t b = ( i == this-&gt;word_count - 1 ? 0u : this-&gt;word(i + 1) );
+            a = (a &lt;&lt; shift_excess) | (b &gt;&gt; shift_excess_inv);
+        }
+    } else {
+        // we don't have enough space to shift left; instead we add another word to the 
+        // end and shift *right* by (64 - shift_excess)
+        this-&gt;push_word();
+        for(int32_t i = 0; i &lt; this-&gt;word_count; ++i){
+            const int32_t j = this-&gt;word_count - i - 1;
+            uint64_t&amp; a = this-&gt;word(j);
+            const uint64_t b = ( j == 0 ? 0u : this-&gt;word(j - 1) );
+            a = (a &gt;&gt; shift_excess_inv) | (b &lt;&lt; shift_excess);
+        }
+    }
+
+    this-&gt;remove_trailing_zero_words();
+    this-&gt;recompute_first_bit_offset();
+
+    return *this;
+}</code></pre>
+            <p>
+                We first consider the case where <code>shift_excess == 0</code>. 
+                In this case, we add <code>shift_bulk</code> to <code>this->shift</code> and return.
+                Given signum \(s\), shift \(p\) and words \([w_k,w_{k-1},\ldots,w_0]\), we indeed have 
+                \[2^{64\cdot\text{shift_bulk}} \cdot s\cdot 2^{64p}\sum_{i=0}^k w_i 2^{64i}= 
+                    s \cdot 2^{64(p+\text{shift_bulk})}\cdot \sum_{i=0}^k w_i 2^{64i}\,,\]
+                so the resulting representation is of the integer we want. 
+                Since multiplication by a positive integer can't change the sign, <code>signum</code> remains correct.
+                Since the words \([w_k,\ldots,w_0]\) remains the same, <code>first_bit_offset</code> also remains correct.
+                Finally, since \(s 2^{64p}\sum_i w_i 2^{64i}\) is a maximal-shift representation, \(2^{64}\) does not divide \(\sum_i w_i 2^{64i}\).
+                This means that \(s 2^{64(p+\text{shift_bulk})} \sum_{i=0}^k w_i 2^{64i} \) is also a maximal-shift representation.
+            </p>
+            <p>
+                If <code>shift_excess</code> is <em>not</em> zero, then we know that <code>signum</code>, <code>first_bit_offset</code>, and <code>shift</code> make up a valid, maximal-shift representation after <code>this.shift</code> is incremented by <code>shift_bulk</code>.
+                Since <code>this->remove_trailing_zero_words()</code> conforms the integer to the maximal-shift property and <code>this->recompute_first_bit_offset()</code>, well, recomputes <code>first_bit_offset</code>, we need only confirm that the intermediate lines transform the integer into a representation with value multiplied by \(2^{\text{shift_excess}}\). 
+                Let \(\alpha=\text{shift_excess}\) be less than 64, and observe that 
+                \[
+                \begin{align*}
+                    2^{\alpha}\cdot s\cdot 2^{64p} \sum_{i=0}^k w_i 2^{64i} &= s \cdot 2^{64p} \sum_{i=0}^k 2^\alpha w_i 2^{64i} \\
+                                        &= s\cdot 2^{64p} \sum_{i=0}^k 2^\alpha\left((w_i \bmod 2^{64-\alpha}) + 2^{64-\alpha}\lfloor w_i/2^{64-\alpha} \rfloor\right) 2^{64i} \\
+                    &= s\cdot 2^{64p}\sum_{i=0}^k \left( 2^\alpha(w_i\bmod 2^{64-\alpha})2^{64i}+2^{64(i+1)}\lfloor w_i/2^{64-\alpha}\rfloor \right) \\
+                    &= s\cdot 2^{64p}\left( 
+                        2^\alpha(w_i\bmod 2^{64-\alpha}) +
+                        2^{64(k+1)}\lfloor w_k/2^{64-\alpha} \rfloor + \right.\\
+                        &\left. \qquad\qquad\qquad \sum_{i=1}^k 2^{64i}\left( 2^\alpha(w_i\bmod 2^{64-\alpha})+\lfloor w_{i-1}/2^{64-\alpha} \rfloor \right)
+                    \right)
+                    \end{align*}
+                \] 
+                If we set \(w_{-1}=0\), this simplifies slightly to 
+                \[ 
+                    s\cdot 2^{64p}\left( 
+                        2^{64(k+1)}\lfloor w_k/2^{64-\alpha} \rfloor +
+                        \sum_{i=0}^k 2^{64i}\left( 2^\alpha(w_i\bmod 2^{64-\alpha})+\lfloor w_{i-1}/2^{64-\alpha} \rfloor \right)\right)\,.
+                \]
+                Now \(2^\alpha (w_i \bmod 2^{64-\alpha})\) is the lower \(64-\alpha\) bits of \(w_i\) shifted \(\alpha\) left, and \(\lfloor w_{i-1}/2^{64-\alpha} \rfloor\) is the upper \(\alpha\) bits of \(w_{i-1}\) shifted \(64-\alpha\) right. 
+                The sum \(  2^\alpha(w_i\bmod 2^{64-\alpha})+\lfloor w_{i-1}/2^{64-\alpha} \rfloor \) has no overlapping bits and can be computed via binary bit-wise OR: 
+                \[  2^\alpha(w_i\bmod 2^{64-\alpha})+\lfloor w_{i-1}/2^{64-\alpha} \rfloor=(w_i &lt;&lt; \alpha)\,|\,(w_{i-1}&gt;&gt;(64-\alpha))\,. \]
+                In short, we have 
+                \[ 2^{\alpha}\cdot s\cdot 2^{64p} \sum_{i=0}^k w_i 2^{64i}= s\cdot 2^{64p}\left( 2^{64(k+1)}(w_k &gt;&gt; (64-\alpha))+ \sum_{i=0}^k (w_i &lt;&lt; \alpha)\,|\,(w_{i-1}&gt;&gt;(64-\alpha)) 2^{64i} \right)\,. \]
+            </p>
+            <p>
+                This is just a formal way of saying "treat \([w_k,\ldots,w_0]\) as a single sequence of binary digits, add \(\alpha\) zeros to the end, and reform into words."
+                Below is an example with three words and \(\alpha=4\).
+                \[
+                    \begin{align*}
+                    &\color{red}{01101\ldots 01001} \quad \color{purple}{11011\ldots 00010} \quad \color{green}{10100\ldots10010} \\
+                    \color{red}{0110\quad}&\color{red}{1\ldots01001}\color{purple}{1101}\quad\underbrace{\color{purple}{1\ldots00010}}_{64-\alpha}\underbrace{\color{green}{1010}}_{\alpha}\quad\color{green}{0\ldots 10010}\color{grey}{0000}
+                    \end{align*}
+                \]
+            </p>
+            <p>
+                Anyway, if <code>shift_excess</code> (\(\alpha\)) is less than or equal to <code>first_bit_offset</code>, then the term 
+                \[2^{64(k+1)}(w_k &gt;&gt; (64-\alpha))\]
+                is zero (the leading red "0110" in our example). 
+                This means we do not need to add a new word, and we can overwrite each word \(w_i\) with 
+                \[ (w_i &lt;&lt; \alpha)\,|\,(w_{i-1}&gt;&gt;(64-\alpha))\,, \]
+                which our function clearly does in this case. 
+                (Note that <code>this->word(i)</code> returns the word \(w_{k-1-i}\) since it counts from the beginning of the word list.)
+            </p>
+            <p>
+                If <code>shift_excess</code> \(\alpha\) is greater than <code>first_bit_offset</code>, then the term \(2^{64(k+1)}(w_k &gt;&gt; (64-\alpha))\) is <em>not</em> zero. 
+                We then add a word to the end of the list via <code>this->push_word()</code> (which becomes the new \(w_0\)).
+                This has the effect of multiplying by \(2^{64}\). 
+                We then must perform a right shift of \(64-\alpha\), which results in a similar bit-shifting procedure as before.
+                I'll leave the details for the interested reader. 
+            </p>
+        </details>
+        <details>
+            <summary>Right shift</summary>
+            <p>
+                As with binary, a right shift is an integer division by a power of two, i.e., 
+                \[z&gt;&gt;j=\begin{cases} 
+                    \lfloor z/2^j \rfloor &\text{if }z \geq 0 \\
+                    \lceil z/2^j \rceil &\text{if }z &lt; 0
+                    \end{cases}\,.\]
+                In a "pure" sense, right shift in base \(2^{64}\) ought to be integer division by some \(2^{64i}\), but we find it convenient to allow any integer (non-negative) power of two. 
+                Right shift differs from left shift in a few notable ways.
+                First, a right shift operation may change the signum of a number, if the result is zero.
+                Secondly, a right shift more substantially interacts with <code>this->shift</code>, since <code>shift</code> must remain non-negative.
+                Here's the algorithm:
+            </p>
+            <pre><code class="language-cpp">/**
+ * Mutates the number to be
+ *    this / 2^(64 shift_bulk + shift_excess),
+ * rounded toward zero.
+ * 
+ * shift_bulk must be non-negative.
+ * shift_excess must be non-negative and less than 64.
+ */
+template&lt;int n, bool ext&gt;
+exact::integer&lt;n, ext&gt;&amp; exact::integer&lt;n, ext&gt;::shift_r_local(int32_t shift_bulk, const int32_t shift_excess){
+    // shift by multiples of 64 first, since that doesn't involve bit-shifting uint64_t entries
+    if(this-&gt;shift &gt;= shift_bulk){
+        // A value of shift is a multiplier 2^(64 shift) of the integer; dividing by 2^(64 shift_bulk)
+        // is just decreasing shift -- as long as the resulting value of shift is non-negative!
+        this-&gt;shift -= shift_bulk;
+    } else {
+        // In this case, this-&gt;shift - shift_bulk is negative.
+        // We set this-&gt;shift to zero and pop off (shift_bulk - this-&gt;shift) of the least-significant words.
+        shift_bulk -= this-&gt;shift;
+        this-&gt;shift = 0;
+        while(shift_bulk &gt; 0 &amp;&amp; this-&gt;word_count &gt; 0){
+            this-&gt;pop_word();
+            --shift_bulk;
+        }
+    }
+
+    // right shift can pop 1's off the end of a number resulting in a long string of zeros
+    this-&gt;remove_trailing_zero_words();
+
+    // if we've either ran out of digits or completed our shift, return
+    if(shift_excess == 0 || this-&gt;signum == 0){
+        // if we pop off all the digits we may be left with zero, otherwise first_bit_offset will be the same
+        if(this-&gt;signum == 0){
+            this-&gt;first_bit_offset = -1;
+        }
+        return *this;
+    }
+
+    if(this-&gt;shift &gt; 0){
+        // Add another word to the end so right shift doesn't needlessly chop off digits.
+        // Since shift_excess &lt; 64, a single word is sufficient.
+        this-&gt;push_word();
+        --this-&gt;shift;
+    }
+
+    // Compute excess right-shift.
+    const int32_t shift_excess_inv = 64 - shift_excess;
+    for(int32_t j = this-&gt;word_count - 1; j &gt;= 0; --j){
+        uint64_t&amp; a = this-&gt;word(j);
+        const uint64_t b = ( j == 0 ? 0 : this-&gt;word(j - 1) );
+        a = (a &gt;&gt; shift_excess) | (b &lt;&lt; shift_excess_inv);
+    }
+
+    this-&gt;remove_trailing_zero_words();
+    this-&gt;recompute_first_bit_offset();
+
+    return *this;
+}</code></pre>
+            <p>
+                For a number with signum \(s\), shift \(p\) and words \([w_k,w_{k-1}, \ldots, w_0]\), the easiest case when dividing by \(2^{64\alpha}\) is when \(p\geq \alpha\). 
+                In this case, the division is exact and yields 
+                \[ 
+                    2^{-64\alpha} \cdot s\cdot 2^{64p} \sum_{i=0}^k w_i 2^{64i} = s \cdot 2^{64(p-\alpha)} \sum_{i=0}^k w_i 2^{64i}\,.
+                \]
+                That is, we subtract <code>shift_bulk</code> from <code>this->shift</code> and we're done.
+                If \(p&lt;\alpha\), then we have to distribute some of the \(2^{-64\alpha}\) term to the words: 
+                \[
+                \begin{align*}
+                    2^{-64\alpha} \cdot s\cdot 2^{64p} \sum_{i=0}^k w_i 2^{64i}&=s\cdot 2^{-64(\alpha-p)}\sum_{i=0}^k w_i2^{64i} \\
+                    &=s\sum_{i=0}^k w_i 2^{64(i+p-\alpha)} \\
+                    &=s\left( \sum_{i=\alpha-p}^{k}w_i2^{64(i+p-\alpha)}+\underbrace{\sum_{i=0}^{\alpha-p-1}w_i2^{64(i+p-\alpha)}}_{&lt;1\text{ since }w_i&lt;2^{64}} \right)
+                \end{align*}
+                \]
+                The second sum is less than one by geometric series, and is stripped by an integer division (since \(|s|\leq 1\)). 
+                Since removing words via <code>this->pop_word()</code> shifts indexes so that \(w_i\) becomes \(w_{i-1}\), all we have to do is call <code>this->pop_word()</code> \(\alpha-p\) times.
+            </p>
+            <p>
+                Since we've possibly removed words, there may be trailing zeros, violating the maximal shift property. 
+                <code>this->remove_trailing_zero_words()</code> removes these and modifies <code>signum</code> to zero if necessary. 
+                If <code>shift_excess</code> is zero or <code>signum</code> is zero, then (1) signum is correct because of <code>this->remove_trailing_zero_words()</code> (note that <code>signum</code> can't flip from 1 to -1 or vice versa) and (2) <code>shift</code> is maximal for the same reason.
+                If <code>signum</code> is not zero, then the first bit from the left has remained the same (<code>this->pop_word()</code> removes words from the right), so <code>first_bit_offset</code> is still correct. 
+                Otherwise, there is no first bit and we set <code>first_bit_offset</code> to -1.
+                We can then return.
+            </p>
+            <p>
+                If we have remaining shift left (<code>shift_excess</code> is not zero), we have to apply bit-wise operations to individual words.
+                It's worth noting at this point that \(\lfloor x/(ab) \rfloor=\lfloor \lfloor x/a \rfloor/b \rfloor \) for positive \(x\), \(a\), and \(b\), which justifies first dividing by the bulk shift, then by the excess shift.
+                Writing \(x=aq+r\) and \(q=bq'+r'\) with \(0\leq r \leq a-1\) and \(0\leq r' \leq b-1\), we have 
+                \[ \lfloor \lfloor x/a \rfloor/b \rfloor = q'\,. \]
+                But 
+                \[ \begin{align*}
+                    x&=a(bq'+r')+r \\
+                    &= abq' +(ar' + r)
+                \end{align*}\]
+                with \(ar'+r\leq a(b-1)+a-1=ab-1\), so \(\lfloor x/(ab) \rfloor=q'\) as well. 
+            </p>
+            <p>
+                The excess right shift bit shifting is done by a very similar process to the excess left shift in the previous section; I will leave the details as an exercise. 
+                Since we call <code>this->remove_trailing_zero_words()</code> and <code>this->recompute_first_bit_offset()</code>, the maximal shift property is maintained, <code>signum</code> is set to zero if necessary, and <code>first_bit_offset</code> is correctly set.
+            </p>
+        </details>
+        <details>
+            <summary>Comparison</summary>
+            <p>
+                Given two exact integers \(a\) and \(b\), we'd like to determine whether \(a=b\), \(a&lt; b\), or \(a&gt;b\).
+                We know how to do this for base 10 numbers.
+                First check whether one number has more digits than the other. 
+                If not, go digit by digit from most significant to least significant, comparing between the numbers. 
+                The number with the first smaller number is less in absolute value.
+                If all the digits match, the numbers are equal.
+                The process also works in base \(2^{64}\). 
+                Supposing \(a\) and \(b\) are positive, the number of words in \(a\) and \(b\) is 
+                <pre><code class="language-cpp">const int32_t words_a = a.shift + a.word_count - a.first_bit_offset / 64;
+const int32_t words_b = b.shift + b.word_count - b.first_bit_offset / 64;</code></pre>
+                The <code>shift</code> term accounts for trailing words not included in the word list, and the integer division <code>first_bit_offset / 64</code> accounts for leading zero words in the word list.
+                Certainly if \(a\) has a more significant word than \(b\), then \(a\) is greater than \(b\) because a single \(2^{64k}\) term is greater than the maximum value \(\sum_{i=0}^{k-1} (2^{64}-1) 2^{64i}\) from all smaller terms, by geometric series.
+            </p>
+            <p>
+                But we can actually do a bit better. 
+                Recall that the binary representations for \(a\) and \(b\) are easily accessible from the binary representations from the words making up \(a\) and \(b\). 
+                We can compare the place of the most significant <em>binary</em> digit of \(a\) to the most significant binary digit of \(b\).
+                The most significant bits \(a\) and \(b\) are 
+                <pre><code class="language-cpp">const int64_t bits_a = 64 * (a.shift + a.word_count) - a.first_bit_offset;
+const int64_t bits_b = 64 * (b.shift + b.word_count) - b.first_bit_offset;</code></pre>
+            </p>
+            <p>
+                If the most significant bit of \(a\) matches that of \(b\), then we can compare \(a\) to \(b\) word by word from most significant to least significant. 
+                As we move to the less significant words, we can imagine that we subtract off the higher words from both \(a\) and \(b\), and that the current word comparison is the most significant.
+                Thus we can make the same geometric series argument for the correctness of our comparison conclusion. 
+            </p>
+            <p>
+                This algorithm is implemented below:
+            </p>
+            <pre><code class="language-cpp">/**
+  * Compares the absolute value of this to the absolute value of other.
+  * Returns std::strong_ordering::greater if |this| &gt; |other|,
+  *         std::strong_ordering::less if |this| &lt; |other|, and 
+  *         std::strong_ordering::equivalent if |this| == |other|
+  */
+template&lt;int n, bool ext&gt;
+std::strong_ordering exact::integer&lt;n, ext&gt;::abs_cmp(const exact::integer&lt;n, ext&gt;&amp; other) const {
+    const std::strong_ordering cmp = this-&gt;get_max_bit() &lt;=&gt; other.get_max_bit();
+    if(cmp != std::strong_ordering::equivalent){
+        return cmp;
+    }
+    // Special case for zeros. We know that this-&gt;get_max_bit() == other.get_max_bit() here, 
+    // so if one of the numbers is zero, they both are.
+    if(this-&gt;signum == 0){
+        return std::strong_ordering::equivalent;
+    }
+
+    // Start comparing bits. Since we know that the two integers share a max bit,
+    // we don't need to account for shift; just start at the first words with a non-zero digit in each
+    int32_t i = this-&gt;first_bit_offset / 64;
+    int32_t j = other.first_bit_offset / 64;
+    while(i &lt; this-&gt;word_count || j &lt; other.word_count){
+        const std::strong_ordering res = (i &lt; this-&gt;word_count ? this-&gt;word_r(i) : 0u) &lt;=&gt; (j &lt; other.word_count ? other.word_r(j) : 0u);
+        if(res != std::strong_ordering::equivalent){
+            return res;
+        }
+        ++i;
+        ++j;
+    }
+    return std::strong_ordering::equivalent;
+}</code></pre>
+            <p>
+                Accounting for sign is similarly straightforward. 
+                If a number is negative and the other positive, the positive one is bigger. 
+                If both numbers are negative, the smaller one in absolute value is bigger.
+                Getting the logic tests as short as possible while accounting for zero is perhaps not as easy as one might hope for, but manageable:
+            </p>
+            <pre><code class="language-cpp">/**
+ * The C++ spaceship operator &lt;=&gt; applied to integers returns:
+ *    std::strong_ordering::less       if a &lt; b
+ *    std::strong_ordering::greater    if a &gt; b
+ *    std::strong_ordering::equivalent if a = b
+ */
+ template&lt;int n, bool ext&gt;
+ constexpr auto exact::operator&lt;=&gt;(const exact::integer&lt;n, ext&gt;&amp; a, const exact::integer&lt;n, ext&gt;&amp; b) {
+     const std::strong_ordering cmp_v = a.abs_cmp(b);
+     // If a == b, then signum(a) == signum(b) and |a| == |b|.
+     // Conversely, if |a| == |b|, then a = +/- b. 
+     //   If signum(a) = signum(b) = 0, then a = b = 0.
+     //   If signum(a) = signum(b) = 1, then a and b are positive so that a = b. 
+     //   If signum(a) = signum(b) = -1, then a and b are negative so that a = b. 
+     if(a.signum == b.signum &amp;&amp; cmp_v == std::strong_ordering::equivalent){
+         return std::strong_ordering::equal;
+     }
+     const int cmp = cmp_v == std::strong_ordering::less ? -1 : 1;
+     // If signum(a) &lt; signum(b), then a must be less than b. If signum(a) == signum(b) and 
+     // a != b (from above), then either:
+     //   signum(a) = signum(b) = 1, in which case a &lt; b iff cmp == -1
+     //   signum(a) = signum(b) = -1, in which case a &lt; b iff cmp == 1
+     // Conversely, suppose that a != b and a &lt; b. If signum(a) is not less than signum(b), it must 
+     // be that signum(a) = signum(b). If signum(a) = signum(b) = 1, then cmp == -1 since a &lt; b ==&gt; |a| &lt; |b|. 
+     // If signum(a) = signum(b) = -1, then cmp == 1 since a &lt; b ==&gt; |a| &gt; |b|. In either case, 
+     // signum(a) != cmp.
+     if(a.signum &lt; b.signum || a.signum == b.signum &amp;&amp; a.signum != cmp){
+         return std::strong_ordering::less;
+     }
+     return std::strong_ordering::greater;
+ }</code></pre>
+        </details>
+        <details>
+            <summary>Bit-wise AND</summary>
+            <p>
+                Since an integer \(a\) written in base \(2^{64}\) has easily accessible binary representation (append the binary representations of its constituent words together), we can extend a binary bit-wise AND operator to arbitrary integers. 
+                It's worth noting that some binary operators &mdash; like NOT, NOR and XNOR &mdash; only work on integers with bounded precision.
+                Since there are infinitely many leading zeros to every arbitrary-precision integer, any operator that can turn zeros into ones will result in infinitely many leading ones. 
+                This is of course not an integer (but can be considered a p-adic number).
+                In the case of AND, however, <code>0 &amp; 0 = 0</code> so we need not worry.
+            </p>
+            <p>
+                We'll implement a <code>bit_and_local(other)</code> function, which overwrites an existing integer <code>this</code> with <code>this & other</code>.
+                The convenient fact about AND is that we only have to consider bits in <code>other</code> that lie within occupied words in <code>this</code>.
+                For example, if <code>this</code> consists of four words with shift 3, but <code>other</code> consists of 100 words with shift 2, we only need to access words \(w_1,w_2,w_3\) and \(w_4\) since only those words contain bits overlapping with the bits of <code>this</code>.
+                Other than lining up the words according to their significance, the implementation is a very straight-forward word-wise <code>uint64_t</code> AND operation:
+            </p>
+            <pre><code class="language-cpp">template&lt;int n, bool ext&gt;
+exact::integer&lt;n, ext&gt;&amp; exact::integer&lt;n, ext&gt;::bit_and_local(const exact::integer&lt;n, ext&gt;&amp; other){
+    // we want a map g:\mathbb{N} \to \mathbb{N} so that the word 
+    //   other.word(n)
+    // shares the same (absolute) bits with
+    //   this.word(g(n))
+    //
+    // Given maps p and q which map this words and other words to absolute words:
+    //   p(n) = (this.word_count - 1 - n) + this.shift
+    //   q(n) = (other.word_count - 1 - n) + other.shift,
+    // we have g = p^-1 \circ q.
+    //   p^-1(n) = (this.word_count - 1 - n) + this.shift
+    // so that 
+    //   g(n) = (this.word_count - 1 - ((other.word_count - 1 - n) + other.shift)) + this.shift
+    //        = n + (this.word_count - other.word_count) + (this.shift - other.shift)
+    const int32_t g0 = (this-&gt;word_count - other.word_count) + (this-&gt;shift - other.shift);
+    const int32_t gn = g0 + other.word_count;
+    for(int32_t i = 0; i &lt; this-&gt;word_count; ++i){
+        this-&gt;word(i) &amp;= ( i &gt;= g0 &amp;&amp; i &lt; gn ? other.word_r(i - g0) : 0u );
+    }
+    this-&gt;remove_trailing_zero_words();
+    this-&gt;recompute_first_bit_offset();
+    return *this;
+}</code></pre>
+            <p>
+                Since <code>this-&gt;remove_trailing_zero_words()</code> and <code>this-&gt;recompute_first_bit_offset()</code> are called at the end, <code>signum</code> and <code>first_bit_offset</code> are set correctly (a bit-wise AND cannot flip the sign), and the maximal shift property is preserved.
+            </p>
+        </details>
+        <details>
+            <summary>Addition and subtraction</summary>
+            <p>
+                Let's first consider the case of adding two positive numbers together. 
+                If we were to use pencil and paper, we'd first line up the numbers, one above the other so that aligned digits have the same significance, filling in any leading zeros so the two numbers are the same length.
+                We'd then proceed right to left, summing aligned digits. 
+                If the sum is less than 10, we write the sum in the space below the aligned digits.
+                If the sum is greater than 10, we "carry" the one &mdash; meaning add an extra one to the sum immediately to the left &mdash; and write the sum minus 10 (a single digit) in the space below the aligned digits.
+                If there is a carry on the last sum, we append a one to the left of the result.
+                \[
+                \begin{array}{rl}
+                {\scriptsize 1}\,{\scriptsize 1}\,\,\,\,\,\,     \\
+                    005671  \\
+                +\,\,100832 \\
+                    \hline
+                    106503 
+                \end{array}
+                \]
+                In the example above, we carry twice, in the sum \(7+3=10\) and in the sum \(1+6+8=15\). 
+            </p>
+            <p>
+                Each digit sum is the grouping of like power-of-ten terms, with carrying "spilling" into the next higher power-of-ten.
+                In base \(b\), two numbers have expansion 
+                \[
+                    \begin{align*} 
+                        x=\sum_{i=0}^p x_i b^i \\ 
+                        y=\sum_{i=0}^q y_i b^i
+                    \end{align*}
+                \]
+                and sum, assuming that \(x_i=0\) when \(i&gt;p\) and \(y_i=0\) when \(i&gt;q\), 
+                \[
+                    x+y = \sum_{i=0}^{\max(p,q)} b^i(x_i + y_i)\,.
+                \]
+                If \(x_i+y_i\geq b\), then \(x_i+y_i=b+(x_i+y_i-b)\) and the \(b^i \cdot b=b^{i+1}\) term "carries" to the next term, leaving \(0\leq x_i+y_i-b&lt; b\).
+            </p>
+            <p>
+                If we seek to mutate a base \(2^{64}\) number \(x\) by adding another base \(2^{64}\) number \(y\) to it, we can ask which words in \(x\) will have to change. 
+                Certainly, any word in \(x\) with less significance than the least (nonzero) significant word in \(y\) will be left untouched, since adding zero does nothing, and there can be no carry from adding zero. 
+                Any word with significance matching the significance in \(y\) will most likely change, unless the corresponding word in \(y\) is zero or equal to \(2^{64}-1\) with a carry.
+                Words in \(x\) with significance much greater than the most significant word in \(y\) will almost surely not change, unless a carry propagates through every prior word in \(x\) down to the significance of the most significant word in \(y\).
+                This scenario requires every word \(x_i\) down to the most significant word in \(y\) to be equal to \(2^{64}-1\).
+                \[
+                    \begin{array}{rl}
+                        0000004563200000  \\
+                    +\,\,4593995968382990 \\
+                        \hline
+                        \color{gray}{459}\color{orange}{400}\color{red}{05315}\color{gray}{82990}
+                    \end{array}
+                \]
+                A base 10 example is shown above, with \(y\) above and \(x\) below.
+                Digits in gray didn't change from \(x\), digits in red changed and were very likely to change, and digits in orange changed because of a propagated carry. 
+                Note that all but the first orange digit must have a nine above it.
+            </p>
+            <p>
+                Our algorithm starts at the least significant non-zero word in \(y\), and moves left, keeping a carry flag as it goes. 
+                Once it reaches the end of significant words of \(y\), it continues left contingent on a propagated carry. 
+            </p>
+            <pre><code class="language-cpp">/**
+ * Modifies "this" integer to be this + other. 
+ * 
+ * this.signum be be equal to other.signum.
+ */
+template&lt;int n, bool ext&gt;
+exact::integer&lt;n, ext&gt;&amp; exact::integer&lt;n, ext&gt;::add_local_matches_signum(const exact::integer&lt;n, ext&gt;&amp; other){
+    // map the words of other onto the words of this, then extend this to include 
+    // the words of other, then perform addition word-wise from least significant bit 
+    // to most significant bit
+
+    // we want a map g:\mathbb{N} \to \mathbb{N} so that the word 
+    //   other.word(n)
+    // has the same significance as
+    //   this.word(g(n))
+    //
+    // Given maps p and q which map this words and other words to significance values:
+    //   p(n) = (this.word_count - 1 - n) + this.shift
+    //   q(n) = (other.word_count - 1 - n) + other.shift,
+    // we have g = p^-1 \circ q.
+    //   p^-1(n) = (this.word_count - 1 - n) + this.shift
+    // so that 
+    //   g(n) = (this.word_count - 1 - ((other.word_count - 1 - n) + other.shift)) + this.shift
+    //        = n + (this.word_count - other.word_count) + (this.shift - other.shift)
+    //        = n + g0
+    // Note that 
+    //   g^-1(n) = n - g(0)
+
+    // expand_to_subsume adds words (to the right and to the left) so that there is a word
+    // of equal significance in this for every word in other.
+    // These words, formally implicitly zero in this, will very likely be modified during the addition, so 
+    // we'd have to add them anyway. 
+    this-&gt;expand_to_subsume(other);
+
+    const int32_t g0 = (this-&gt;word_count - other.word_count) + (this-&gt;shift - other.shift);
+    unsigned char carry = 0;
+    // j and i are indices of words in other and this (respectively) with equal significance
+    int32_t j = other.word_count - 1 + g0;
+    for(int32_t i {other.word_count - 1}; i &gt;= 0; --i){
+        uint64_t&amp; target = this-&gt;word(j);
+        carry = _addcarry_u64(carry, other.word_r(i), target, &amp;target);
+        --j;
+    }
+
+    if(carry != 0){
+        // propagate the carry until carry is zero, or we run out of digits
+        while(j &gt;= 0 &amp;&amp; carry != 0){
+            uint64_t&amp; target = this-&gt;word(j);
+            carry = _addcarry_u64(carry, 0u, target, &amp;target);
+            --j;
+        }
+        // if we ran out of digits, we need to add another one
+        if(j &lt; 0 &amp;&amp; carry != 0) {
+            // push word, right shift by 1 word, set left-most word to 1u
+            this-&gt;push_word();
+            for(int32_t j {this-&gt;word_count - 1}; j &gt; 0; --j){
+                this-&gt;word(j) = this-&gt;word_r(j-1);
+            }
+            this-&gt;word(0) = 1u;
+        }
+    }
+
+    this-&gt;remove_trailing_zero_words();
+    this-&gt;recompute_first_bit_offset();
+
+    return *this;
+}</code></pre>
+            <p>
+                Addition can lead to the least significant words becoming zero. 
+                In base 10, \(13499+1=13500\) for example. 
+                Addition can also lead to a decrease in <code>first_bit_offset</code>, if a carry occurs or \(y\) has more significant words than \(x\). 
+                Calling <code>remove_trailing_zero_words()</code> and <code>recompute_first_bit_offset()</code> maintains the maximal shift property and resets <code>first_bit_offset</code>. 
+                Since the addition of two positive numbers results in a positive number, and the addition of two negative numbers results in a negative number, the signum need not be changed.
+            </p>
+            <p>
+                Now a more interesting question is the case of subtraction, the case when the sign of \(y\) does not match the sign of \(x\). 
+                If one or the other is zero, it's easy; we'll have a case for that. 
+                But the grade-school subtraction algorithm is considerably more complicated; instead of carrying excess from left to right, we <em>borrow</em> from more significant digits to make up for deficiency in less significant digits.
+                This is a slight problem when the more significant digit is zero. 
+                In this case, we have to borrow from an even more significant digit, turn the zero digit (and any other intermediate zero digits) to a nine, and proceed. 
+                If there are no more significant digits from which to borrow, the usual procedure is to restart the entire calculation, flipping the roles of \(x\) and \(y\), and negate the result. 
+            </p>
+            <p>
+                This is annoying to implement correctly. 
+                Fortunately, as you might have forseen, we can avoid this borrowing business entirely by transforming the subtraction into an addition using a slightly modified two's-complement scheme.
+                Suppose we are attempting to calculate \(y-x\), where \(x\) and \(y\) have matching sign. 
+                If \(x\) has words \([w_k,w_{k-1},\ldots,w_0]\), let \(\sim x\) be the integer represented by words \([\sim w_k,\sim w_{k-1},\ldots,\sim w_0]\), where \(\sim w_i\) is the binary negation as a 64-bit unsigned integer. 
+                This is a representation-dependent operation, since appending a zero word \(w_{k+1}\) doesn't change the value of \(x\) but <em>does</em> change \(\sim x\). 
+                Suppose for now that <code>shift</code> is zero for both \(x\) and \(y\).
+                Observe that 
+                \[ 
+                \begin{align*}
+                    \sim x=\,\,\sim\sum_{i=0}^k w_i 2^{64i}&=\sum_{i=0}^k (\sim w_i) 2^{64i} \\
+                    &= \sum_{i=0}^k (2^{64}-1-w_i)2^{64i} \\
+                    &= (2^{64}-1)\left(\sum_{i=0}^k 2^{64i}\right)-x \\
+                    &= 2^{64(k+1)}-1-x\,.
+                \end{align*}
+                \]
+                (This makes sense, considering the binary representation for \(x\)). 
+                Then 
+                \[ 
+                    y-x=y+(\sim x)+1 - 2^{64(k+1)}\,.
+                \]
+                Now if \(|y|&gt; |x|\), then \(|y|-|x|=|y-x|\) (recall \(x\) and \(y\) have matching signs).
+                So we ignore signum entirely and suppose that \(x\) and \(y\) are positive. 
+                In this case, \(y-x\) is positive since \(y&gt; x\).
+                Supposing that we increase \(k\) to be one more than the word count of \(y\) by prepending zero words to \(x\), the sum \(y+(\sim x)+1\) is strictly less than \(2^{64(k+1)+1}\).
+                This means that \(y+(\sim x)+1\) must have a one in the binary \(2^{64(k+1)}\) place, lest \(y-x\) go negative.
+                We can therefore calculate \(y+(\sim x)+1\) and ignore the (guaranteed) carry into the \(2^{64(k+1)}\) place.
+            </p>
+            <p>
+                In the other case, where \(|y|&lt; |x|\), we compute \(x-y\) instead, noting that 
+                \[
+                    x-y=x+(\sim y)+1-2^{64(q+1)}\,,
+                \]
+                where \(q\) is the index of the most significant word in \(y\).
+                Again, by increasing \(q\) to match \(k\), we can ignore the \(-2^{64(q+1)}\) term if we ignore the carry into the \(2^{64(q+1)}\) place in the sum \(x+(\sim y)+1\).
+            </p>
+            <p>
+                In practice, when we seek to mutate \(x\) to be \(x-y\), we add words to \(x\) via <code>x.expand_to_subsume(y)</code>, which increases \(k\) to \(q\). 
+                We then perform the addition \(x+(\sim y)\) or \(y+(\sim x)\) depending on <code>x.abs_cmp(y)</code>, making sure to initialize the carry to 1 at the start to account for the missing \(+1\). 
+                However, this addition occurs always in the word range \(w_0,w_1,\ldots, w_k\), ignoring the final carry. 
+                When \(|y|&gt; |x|\), this is as discussed; the (ignored) next word \(w_{k+1}\) would have received a final carry of one.
+                When \(|x|&gt; |y|\), however, we were supposed to increase \(q\) to \(k\) (if necessary), then perform the addition on the words \(w_0,w_1,\ldots, w_q\). 
+                This ostensibly differs from our procedure when \(q&gt; k\).
+                However, recall that this cannot be the case from the <code>expand_to_subsume</code> call above; it must be that \(q\leq k\). 
+                In addition, we'd like for \(y\) to remains <code>const</code>. 
+                To work-around a <code>y.expand_to_subsume(x)</code> call, we <em>virtually</em> expand \(y\) when reading its words &mdash; if <code>i &lt; 0</code>, we manually enforce <code>y.word_r(i) == 0u</code> (<code>word_r</code> is "word read-only").
+            </p>
+            <pre><code class="language-cpp">/**
+ * Mutates this integer to be the sum (this + other).
+ */
+template&lt;int n, bool ext&gt;
+exact::integer&lt;n, ext&gt;&amp; exact::integer&lt;n, ext&gt;::add_local(const exact::integer&lt;n, ext&gt;&amp; other){
+    // special cases for zero signum or matching signum
+    if(other.signum == 0){
+        return *this;
+    }
+    if(this-&gt;signum == 0){
+        *this = other.copy_remove_starting_zeros();
+        return *this;
+    }
+    if(other.signum == this-&gt;signum){
+        return this-&gt;add_local_matches_signum(other);
+    }
+    this-&gt;expand_to_subsume(other);
+    // the above expand_to_subsume call makes it so that 
+    // 2^(64 * this-&gt;shift) divides both this and other.
+    // Since (alpha a - alpha b) = (a - b) alpha, we can do the subtraction
+    // as if the shift is zero. 
+    // 
+    // Note that ~a = 2^N - 1 - a, where N is one more than the power of two represented by 
+    // the first bit of a-&gt;word(0).
+    // Then
+    //   b - a = b + ~a + 1 - 2^N
+    // When |b| &gt; |a|, b - a is positive so that (b + ~a + 1) has a 1 in the 2^N position, and we can just remove that 1 
+    // to perform the subtraction (i.e., not carry the final 1).
+    // When |a| &gt; |b|, we will instead produce 
+    //   a - b = a + ~b + 1 - 2^N
+    //
+    // Since |a - b| = |b - a|, these two subtractions will yield the same bitstring; we just have to be careful
+    // with signum.
+    //
+    // the + 1 will be implemented by an initial carry of 1
+    const std::strong_ordering cmp = this-&gt;abs_cmp(other);
+    if(cmp == std::strong_ordering::equivalent){
+        // the result will be zero, clear out this integer
+        while(this-&gt;word_count &gt; 0){
+            this-&gt;pop_word();
+        }
+        this-&gt;signum = 0;
+        return *this;
+    } 
+
+    // if true, this means that this &lt; other, so we should compute other - this = other + ~this + 1 - 2^N
+    const bool this_tilde = ( cmp == std::strong_ordering::less ); 
+    
+    const int32_t g0 = (this-&gt;word_count - other.word_count) + (this-&gt;shift - other.shift);
+    unsigned char carry = 1;
+    for(int32_t i = this-&gt;word_count - 1; i &gt;= 0; --i){
+        const int32_t j = i - g0;
+        // virtual expansion of other.word_count to match this.word_count
+        uint64_t ob = j &gt;= 0 &amp;&amp; j &lt; other.word_count ? other.word_r(j) : 0u;
+        if(!this_tilde){
+            ob = ~ob;
+        }
+        uint64_t&amp; tb = this-&gt;word(i);
+        if(this_tilde){
+            tb = ~tb;
+        }
+        carry = _addcarry_u64(carry, ob, tb, &amp;tb);
+    }
+
+    // If this_tilde == true, then |other| &gt; |this|.
+    // 
+    // We know that sign(this) != sign(other); 
+    //   If sign(this) == 1, then this &gt; 0, other &lt; 0, and this + other = |this| - |other|
+    //   If sign(this) == -1, then this &lt; 0, other &gt; 0, and this + other = |other| - |this|
+    //
+    // So if...
+    //   this_tilde &amp;&amp; this.signum == 1, this + other = |this| - |other| and |other| &gt; |this|, so this + other &lt; 0
+    //   this_tilde &amp;&amp; this.signum == -1, this + other = |other| - |this| and |other| &gt; |this|, so this + other &gt; 0
+    //   !this_tilde &amp;&amp; this.signum == 1, this + other = |this| - |other| and |other| &lt; |this|, so this + other &gt; 0
+    //   !this_tilde &amp;&amp; this.signum == -1, this + other = |other| - |this| and |other| &lt; |this|, so this + other &lt; 0
+    this-&gt;signum = this_tilde == (this-&gt;signum == 1) ? -1 : 1;
+
+    this-&gt;remove_trailing_zero_words();
+    this-&gt;recompute_first_bit_offset();
+
+    return *this;
+}</code></pre>
+            <p>
+                If <code>this->signum == 0</code> or <code>other.signum == 0</code>, we return either <code>this</code> or <code>other</code> (copied); since the inputs are assumed to be well-formed representations, the output is as well.
+                If <code>this->signum == other.signum</code>, then the result of <code>add_local_matches_signum</code> correctly sets <code>signum</code>, <code>first_bit_offset</code>, and <code>shift</code> as discussed at the beginning of this section.
+            </p>
+            <p>
+                Otherwise, <code>this->remove_trailing_zero_words()</code> and <code>this->recompute_first_bit_offset</code> correctly sets <code>signum</code>, <code>first_bit_offset</code> and <code>shift</code> to maintain the maximum shift property and ensure the output is a valid representation.
+            </p>
+        </details>
+        <details>
+            <summary>Multiplication</summary>
+            <p>
+                Multiplication algorithms are extremely well researched.
+                Unlike addition and subtraction, which have naive implementations matching the optimal \(O(n)\) runtime in the number of words involved, there exists multiplication algorithms which are better than the naive \(O(n^2)\) grade-school algorithm. 
+                These algorithms exploit patterns of repeated calculations done during expansion of the typical product 
+                \[ xy=\left(\sum_{i=0}^k w_i 2^{64i}\right)\left(\sum_{j=0}^q w_j' 2^{64j}\right)\,. \]
+                As an example, let's consider \(k=q=1\). 
+                In this case, both \(x\) and \(y\) have two words, so we expect to perform four multiplications to account for the cross-terms \(w_0w_0'\), \(w_0w_1'\), \(w_1w_0'\), and \(w_1w_1'\). 
+                But by shelling out a few more cheap addition and bit-shifting operations, we can get away with only three multiplications: 
+                \[
+                \begin{align*}
+                    (w_0+2^{64}w_1)(w_0'+2^{64}w_1')&=w_0w_0'+2^{64}(w_0w_1'+ w_1w_0')+2^{128}w_1w_1' \\
+                    &=  w_0w_0'+ 2^{64}((w_0+w_1)(w_0'+w_1')-w_0w_0'-w_1w_0') + 2^{128}w_1w_1' \\
+                    &= w_0w_0'(1-2^{64})+2^{64}(w_0+w_1)(w_0'+w_1')+w_1w_1'(2^{128}-2^{64})
+                \end{align*}
+                \]
+                (Note here that multiplication by \(1-2^{64}\) and \(2^{128}-2^{64}\) can be resolved by bit shifting operations and addition.) 
+                A slightly more general and recursive setup is the basis of the Karatsuba algorithm, which achieves \(O(n^{\log_2 3})\) runtime over the naive \(O(n^2)\).
+            </p>
+            <p>
+                For a product of 3-word numbers \(xy=(a+2^{64}b+2^{128}c)(d+2^{64}e+2^{128}f)\), there is a factorization with only five multiplications: 
+                \[
+                (a+2^{64}b+2^{128}c)(d+2^{64}e+2^{128}f)=
+                \begin{bmatrix}
+                    1+2^{63}-2^{128}-2^{191} \\
+                    2^{127}+\frac{1}{3}\left(2^{64}+2^{191}\right) \\
+                    -2^{64}+2^{127}+2^{191} \\
+                    \frac{1}{3}\left(2^{63}-2^{191}\right) \\
+                    -2^{65}-2^{128}+2^{193}+2^{256}
+                \end{bmatrix}^T
+                \begin{bmatrix}
+                    ad \\
+                    (a+b+c)(d+e+f) \\
+                    (a-b+c)(d-e+f) \\
+                    (a-2b+4c)(d-2e+4f) \\
+                    cf
+                \end{bmatrix}
+                \]
+                In addition to the five multiplications on the right, this involves bit shifting, a fairly substantial amount of addition, and (integer) division by three. 
+                This particular division by three can be done in linear time (like addition) via word-wise multiplication by the modular inverse of \(3\), together with some extra borrow bookkeeping.
+                This family of factorizations leads to the Toom-Cook algorithm &mdash; or rather the special case Toom-3. 
+                In general, the Toom-\(n\) algorithm provides a standard method to rewrite the product \(\left(\sum_{i=0}^n w_i 2^{64i}\right)\left(\sum_{j=0}^n w_j' 2^{64j}\right)\) with only \(2n-1\) multiplications.
+                When made into a recursive algorithm, Toom-\(n\) has significantly better asymptotic runtime than the naive method.
+            </p>
+            <p>
+                The last major practical multiplication algorithm is the famed Sch&ouml;nhage-Strassen algorithm, which uses the fast Fourier transform (FFT) to convert the convolution \(xy\) into a point-wise multiplication.
+            </p>
+            <p>
+                There is an exceptionally nice unifying structure for Karatsuba, Toom-Cook, Sch&ouml;nhage-Strassen and other related algorithms that shows that the Chinese remainder theorem is really to thank for the algorithmic improvements.
+                Our single iteration of Toom-3 above, for example, is a chain 
+                \[ \begin{align*}
+                \mathbb{Z}\to \mathbb{Z}[x]/(2^{64} - x)\to \mathbb{Z}[x]\to\mathbb{Z}[x]/(x^4+2x^3-x^2-2x)\cong \prod_{j=-1}^2\mathbb{Z}[x]/(x-j)  \\
+                y\mapsto\sum_{i=0}^2\alpha_i 2^{64i}\mapsto\sum_{i=0}^2\alpha_ix^i\mapsto\left(\sum_{i=0}^2\alpha_i(-1)^i,\sum_{i=0}^2\alpha_i(0)^i,\ldots,\sum_{i=0}^2\alpha_i(2)^i\right)\quad\,
+                \end{align*}\,.\]
+                In the quotient ring \(\prod_{j=-1}^2\mathbb{Z}[x]/(x-j)\), multiplication is point-wise. 
+                For a dense but accurate explanation, see Bernstein's "<a href="https://cr.yp.to/papers/m3-20010811-retypeset-20220327.pdf">Multidigit Multiplication for Mathematicians</a>".
+            </p>
+            <p>
+                This is all very interesting, but if we look at GMP's threshold for applying Toom-2 (aka Karatsuba) over the naive school algorithm, it's something around 20 words per operand.
+                We expect very few calculations to make it to 20 words of precision, if any.
+                Therefore we will content ourselves with implementing the naive algorithm, and Karatsuba's algorithm, just in case. 
+            </p>
+            <p>
+                We'd expect a straightforward implementation for the naive, nested loop multiplication algorithm. 
+                It does appear simple, though there are some hidden details that we'll have to work out.
+            </p>
+            <pre><code class="language-cpp">/**
+ * Computes the multiplication a * b using the naive grammar-school method,
+ * storing the result in "store".
+ * 
+ * a_word_min must be the index of the first word in a (from the left) that contains a non-zero digit.
+ * 
+ * b_word_min must be the index of the first word in b (from the left) that contains a non-zero digit.
+ * 
+ * store must contain at least (a.word_count - a_word_min) * (b.word_count - b_word_min) words, all initialized to zero.
+ */
+template&lt;int n, bool ext&gt;
+void exact::mult_school(const exact::integer&lt;n, ext&gt;&amp; a, const int32_t a_word_min, 
+    const exact::integer&lt;n, ext&gt;&amp; b, const int32_t b_word_min, 
+    exact::integer&lt;n, ext&gt;&amp; store){
+
+    uint64_t low, hi;
+    unsigned char carry {0}, hi_carry {0};
+    int32_t tb {store.word_count - 1};
+    for(int32_t i {a.word_count - 1}; i &gt;= a_word_min; --i){
+        const uint64_t ab = a.word_r(i);
+        for(int32_t j {b.word_count - 1}; j &gt;= b_word_min; --j){
+            uint64_t&amp; store_lo {store.word(tb)};
+            uint64_t&amp; store_hi {store.word(tb - 1)};
+            low = _mulx_u64(ab, b.word_r(j), &amp;hi);
+            carry = _addcarry_u64(0, low, store_lo, &amp;store_lo);
+            hi_carry = _addcarry_u64(carry, hi + hi_carry, store_hi, &amp;store_hi);
+            --tb;
+        }
+        tb += b.word_count - b_word_min;
+        --tb;
+    }
+
+    store.shift = a.shift + b.shift;
+    store.signum = a.signum * b.signum;
+    store.remove_trailing_zero_words();
+    store.recompute_first_bit_offset();
+}</code></pre>
+            <p>
+                First, let's look at indexing. 
+                The outer loop iterates over all words of <code>a</code> from least to most significant. 
+                The inner loop iterates over all words of <code>b</code> from least to most significant. 
+                <code>tb</code> is the index of the lower-significance destination word in <code>store</code> (the product of two one-word numbers takes up at most 2 words).
+                The initial value of <code>tb</code> is the last (least significant) word in <code>store</code>, since the first product of words is the least significant from both <code>a</code> and <code>b</code>. 
+                Every time we move to the left (increasing significance) in <code>b</code>, keeping the <code>a</code> word constant, we increase the significance in the destination by 1 word.
+                The actual computation happening here is 
+                \[
+                    \left(\sum_{i=0}^k w_i2^{64i}\right)\left(\sum_{j=0}^q w'_j2^{64j}\right)=
+                        \sum_{i=0}^k\sum_{j=0}^q(w_iw_j')2^{64(i+j)}\,.
+                \]
+                As \(j\) increases while \(i\) stays the same, our factor \(2^{64(i+j)}\) increases by 64 bits, or one word.
+                Now when we increment the word in \(a\) (change \(i\) in the loop), the factor \(2^{64(i+j)}\) drops by \(64(q-1)\), since \(j\) is reset to zero and \(i\) increments.
+                This is reflected in the following lines from above, noting the adjustment for leading zero words in <code>b</code>.
+                <pre><code class="language-cpp">tb += b.word_count - b_word_min;
+--tb;</code></pre>
+            </p>
+            <p>
+                Next, let's talk about carrying.
+                There are two carrying variables, <code>carry</code> and <code>carry_hi</code>.
+                \[
+                \begin{array}{rl}
+                    s_{t+3}\quad s_{t+2}\quad s_{t+1} {\color{red}{\curvearrowleft}} s_t \quad \ldots \quad s_0  \\
+                    +\qquad\qquad\quad{\color{green}{\swarrow}}\, r_{\text{hi}}\quad\,\,\, r_{\text{lo}}\qquad\qquad\, \\
+                    \hline
+                    s_{t+3}\quad s_{t+2}{\color{red}{\curvearrowleft}} s_{t+1}'\quad s_t'\quad\ldots\quad s_0 \\
+                    +\qquad\,\,{\color{green}{\swarrow}}\,r_{\text{hi}}'\quad\,\,\, r_{\text{lo}}'\qquad\qquad\qquad\quad\! \\
+                    \hline
+                    s_{t+3}\quad s_{t+2}''\quad s_{t+1}''\quad s_t'\quad \ldots\quad s_0
+                \end{array}
+                \]
+                <code>carry</code> stores the extra bit overflow from the sum <code>low + store_low</code>, i.e. the lower-significance word in the product \(w_i w_j'\) and the target store word. 
+                Above, this is represented by the curved, red arrow in the sums \(r_{\text{lo}}+s_t\) and \(r_{\text{lo}}'+s_{t+1}'\). 
+                This carry is absorbed into the high half sum, <code>hi + store_hi</code>, represented in the diagram as the sums \(r_{\text{hi}}+s_{t+1}\) and \(r_{\text{hi}}'+s_{t+2}\).
+                This high half sum may <em>also</em> have an overflow bit, which we put into <code>carry_hi</code>. 
+                The reason that we need two carry flags, is that the high half sum may need to absorb two different carries, one from the <code>carry</code> from the low significance sum, and one <code>carry_hi</code> from the high significance sum from the previous iteration in the inner loop. 
+                The high carries are represented by green arrows in the diagram. 
+                One results from the sum \(r_{\text{hi}}+s_{t+1}\) and is absorbed in the \(r_{\text{hi}}'+s_{t+2}\) sum, and the other results from the sum \(r_{\text{hi}}'+s_{t+2}\) and is absorbed later (not shown). 
+            </p>
+            <p>
+                The dual carry absorption results in an unconventional looking line: 
+                <pre><code class="language-cpp">hi_carry = _addcarry_u64(carry, hi + hi_carry, store_hi, &amp;store_hi);</code></pre>
+                While the low carry <code>carry</code> occupies the usual carry slot, we simply add <code>hi_carry</code> to the high-significance product <code>hi</code>. 
+                Should we not be concerned about overflow in the sum <code>hi + hi_carry</code>? 
+                Well, recall that <code>hi</code> is bits 64-127 (zero-indexed) of the product of two 1-word numbers. 
+                The maximal product of two 1-word numbers is 
+                \((2^{64}-1)^2 = 2^{128}-2^{65}+1\) which has high half 
+                \[\left\lfloor\frac{2^{128}-2^{65}+1}{2^{64}}\right\rfloor=\lfloor2^{64}-2+2^{-64}\rfloor=2^{64}-2\,.\]
+                Thus <code>hi</code> can always accommodate a <code>hi_carry</code> of maximum value \(1\).
+            </p>
+            <p>
+                The next slightly suspicious item is that while <code>carry</code> is reset every iteration of the inner loop, <code>hi_carry</code> is not reset even when the outer loop increments.
+                It's fairly clear that <code>hi_carry</code> ought to be zero whenever the inner loop starts over, yet it appears to retain whatever value it had last, which ostensibly could be one. 
+                However, because of the order from least-to-most significant in both the inner and outer loop, the <code>hi_carry</code> will always be zero upon completion of the last iteration of the inner loop. 
+                After the inner loop completes its <code>j == b_word_min</code> iteration, <code>store</code> contain the partial sum, for some \(N\leq q\), except for possibly a hanging carry from <code>carry_hi</code>,
+                \[ 
+                \begin{align*}
+                    \sum_{i=0}^N\sum_{j=0}^q(w_iw_j')2^{64(i+j)}&\leq \sum_{i=0}^N\sum_{j=0}^q (2^{64}-1)^22^{64(i+j)} \\
+                    &\leq (2^{64}-1)^2\sum_{i=0}^N 2^{64i}\sum_{j=0}^q 2^{64j} \\
+                    &\leq (2^{64}-1)^2\sum_{i=0}^N 2^{64i}\frac{2^{64(q+1)}-1}{2^{64}-1} \\
+                    &\leq (2^{64}-1)(2^{64(q+1)}-1)\sum_{i=0}^N 2^{64i} \\
+                    &\leq (2^{64(q+1)}-1)(2^{64(N+1)}-1)\,.
+                \end{align*}
+                \]
+                Now this product is less than \(2^{64(q+N+2)}\), which means that the store word \(s_{q+N+2}\) is zero. 
+                The store word \(s_{q+N+1}\) has the same significance as <code>store_hi</code> in the final iteration of the inner loop. 
+                This means that there is never a carry in the sum <code>(hi + hi_carry) + store_hi</code>, and <code>carry_hi</code> is set to zero at the end of this loop iteration.
+            </p>
+            <p>
+                
+            </p>
+        </details>
+        <details>
+            <summary>Integer division and remainder</summary>
+        </details>
+        <details>
+            <summary>GCD and LCM</summary>
+        </details>
+        <h2>Arbitrary Precision Rationals</h2>
 	</div>
 </body>
 </html>
