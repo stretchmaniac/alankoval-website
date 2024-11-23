@@ -48,14 +48,23 @@ body{
 	display:flex;
 	flex-direction:row;
 }
+@media (min-width: 800px) {
+    .content {
+        padding-left: 40px;
+        padding-right: 40px;
+        padding-top: 40px;
+    }
+}
+.MJXc-display {
+    overflow-x: scroll;
+}
 .content{
-    width:50%;
 	margin-top:15px;
-	margin-left:15%;
 	background-color:white;
-	padding-left:80px;
-	padding-top:40px;
-	padding-right:80px;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+    min-width: 50%;
 }
 .side-bar{
 	width:10%;
@@ -71,7 +80,7 @@ body{
 }
 #side-bar-description{
 	margin-top: 15px;
-	font-size:15px;
+	font-size: 1rem;
 	text-align:center;
 }
 .footer{
@@ -100,7 +109,8 @@ body{
     font-size: small;
 }
 .post-line {
-    margin-bottom: 15px;
+    padding: 15px;
+    padding-bottom: 10px;
 }
 .def {
     font-style: italic;
