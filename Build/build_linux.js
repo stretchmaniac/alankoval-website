@@ -71,11 +71,22 @@ buildPage('../About/about.html', 'result/about.html', false);
 // error page
 buildPage('../404 Page/error.html', 'result/error.html', false);
 
-// projects page
-buildPage('../Projects/projects.html', 'result/projects.html', false);
+// Koval's 3D Grapher landing page
+buildPage('../Grapher/grapher-landing.html', 'result/grapher-landing.html', false);
+copyAssets(['../Grapher'])
 
 // hacks page
 buildPage('../Hacks/hacks.html', 'result/hacks.html', false);
+
+function copyAssets(folders){
+	for(let folder of folders){
+		const pics = files.readdirSync(folder).filter(x => x.endsWith('.png'))
+		for(let f of pics){
+			console.log(`copying ${folder}/${f} to result/${f}`)
+			shell.cp(`${folder}/${f}`, `result/`)
+		}
+	}
+}
 
 
 console.log('---Retrieving application builds---------')

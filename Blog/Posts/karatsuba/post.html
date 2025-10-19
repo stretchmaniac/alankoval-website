@@ -136,9 +136,56 @@
             You might change your mind, however, after attempting to rearrange \((a+b2^N+c2^{2N})(d+e2^N+f2^{2N})\) in a way that uses only five \(N\)-bit multiplications.
             Indeed, larger Toom-\(n\) variants would be extremely difficult to generate by hand.
         </p>
-        <h3>Implementation Outline</h3>
+        <h3>Recursive Outline</h3>
         <p>
+            It is not efficient to allocate memory dynamically during the recursive Karatsuba algorithm. 
+            Instead, we pass in sufficient extra "scratch" memory to be shared by all recursive calls.
+            This presents an interesting challenge: how much memory will we need? 
+            To approach the question, we'll need to understand the particular recursive structure of the algorithm. 
+        </p>
+        <p>
+            Here is the function signature: 
+        </p>
+        <pre><code class="language-cpp">template&lt;int n, bool ext&gt;
+void exact::mult_karatsuba_internal(
+        const exact::integer&lt;n, ext&gt;&amp; a, int32_t a_slice_min, const int32_t a_slice_max_excl, 
+        const exact::integer&lt;n, ext&gt;&amp; b, int32_t b_slice_min, const int32_t b_slice_max_excl,
+        exact::integer&lt;n, ext&gt;&amp; store, const int32_t store_slice_min, const int32_t store_slice_max_excl,
+        exact::integer&lt;n, ext&gt;&amp; aux_store, const int32_t aux_slice_min, const int32_t aux_slice_max_excl
+);</code></pre>
+        <p>
+            Integers <code>a</code> and <code>b</code> have word lists <code>a.word(0), a.word(1), ..., a.word(a.word_count - 1)</code> and <code>b.word(0), b.word(1), ..., b.word(b.word_count - 1)</code> from most significant to least significant. 
+            The function definition must compute the product of <em>slices</em> of <code>a</code> and <code>b</code>, namely the non-negative integers with word lists, respectively,
+            <pre><code class="language-cpp">[a.word(a_slice_min), a.word(a_slice_min + 1), ..., a.word(a_slice_max_excl - 1)]
+[b.word(b_slice_min), b.word(b_slice_min + 1), ..., b.word(b_slice_max_excl - 1)]</code></pre>
+            The result must be placed in <code>store</code>, with the least significant result word at the (<code>store_slice_max_excl - 1</code>)th word of <code>store</code>. 
+            Finally, <code>aux_store</code> is our designated scratch space, with the words <code>aux_slice_min</code>, <code>aux_slice_min + 1</code>, ..., <code>aux_slice_max_excl - 1</code> available for use by this particular recursive call. 
+            For example, the following code computes the product of the integers <code>a</code> and <code>b</code>:
+            <pre><code class="language-cpp">exact::mult_karatsuba_internal(
+    a, 0, a.word_count,
+    b, 0, b.word_count,
+    store, 0, store.word_count,
+    aux_store, 0, aux_store.word_count
+);</code></pre>
+        </p>
+        <p>
+            There are four cases in the body of <code>mult_karatsuba_internal</code>. 
+            The first occurs when <code>a_width = a_slice_max_excl - a_slice_min</code> or <code>b_width = b_slice_max_excl - b_slice_min</code> is less than some fixed threshold, that is, the slice of <code>a</code> or <code>b</code> is small enough.
+            This functions as the base case of our algorithm, with the threshold being the maximum size for which the naive, grade-school multiplication algorithm is more efficient.
+            In this case, a separate function <code>exact::mult_school</code> writes directly to <code>store</code> and requires no auxiliary storage.
+        </p>
+        <p>
+            The remaining cases depend on the value of <code>N</code>, calculated as 
+            <pre><code class="language-cpp">const int32_t a_width = a_slice_max_excl - a_slice_min;
+const int32_t b_width = b_slice_max_excl - b_slice_min;
 
+const int32_t N = std::max(a_width + 1, b_width + 1) / 2;</code></pre>
+            This functions as \(N\) from the previous section, though scaled by \(64\).
+            The general process is to split <code>a</code> and <code>b</code> each into two parts \(a=w+x2^{64N}\) and \(b=y+z2^{64N}\). 
+            Here \(N\) is supposed to be about half the number of words of \(a\) and \(b\), so that \(w\) and \(x\) are roughly the same number of words, as is \(y\) and \(z\).
+            But because \(a\) and \(b\) might have wildly different orders of magnitude, it may be the case that <code>N</code> is larger than or equal to <code>a_width</code>, corresponding to the case where \(y=0\). 
+            There's no point in applying the Karatsuba recursion here, since \(ab=wy+2^{64N}wz\) requires only two N-word multiplications.
+            Instead, we first compute \(wz\) recursively in the higher words of the <code>store</code> slice, transfer some words of the result to <code>aux_store</code>, compute \(wy\) in the lower words of <code>store</code>, then add the cached words in <code>aux_store</code> back at the appropriate place. See the below diagram.
         </p>
 	</div>
 </body>

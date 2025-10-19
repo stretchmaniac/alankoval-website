@@ -351,23 +351,6 @@ proceed();</code>
             </ol>
             Didn't work for you? Shoot me an email at <code>alank399@gmail.com</code> and I'll give it a look.
         </p>
-        <h1>Excel Formula Tool</h1>
-        <p><a href='https://alankoval.com/harry/src/index.html'>Harry's Tool</a></p>
-        <p>
-            Typing long expressions into Google sheets or MS excel can be a challenge. A friend 
-            thought a tool that used an math expression editor to generate an excel-style formula would 
-            be helpful. I already had a half-way expression parser sitting around from Koval's 3D Grapher, so 
-            I repurposed it here. A few notes 
-            <ul>
-                <li>Be sure to separate adjacent variables with "*". I.e. write "a*b*c" (\(a\cdot b\cdot c\)) 
-                    instead of "abc" (\(abc\)). 
-                </li>
-                <li>Both Google Sheets and MS Excel have 
-                    very strange behavior when evaluating exponents prefixed with a negative sign. Turns out 
-                    that <code>-x^n = (-x)^n</code> in excel language. Instead write <code>-1*x^n</code>.
-                </li>
-            </ul>
-        </p>
     </div>
 </body>
 </html>

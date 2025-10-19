@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang='en-us'>
+<head>
+	<meta name='dependencies' content='header-styles mathjax'>
+</head>
+<body>
+	<div style='padding:10px'>
+		<h1>Koval's 3D Grapher</h1>
+        <a href="alankoval.com/3dgrapher">alankoval.com/3dgrapher</a>
+        <p>Best on Chrome, at the moment</p>
+		<div style="display:flex; flex-direction: column; align-items: center; margin-top: 20px">
+            <div style="max-width:100%">
+                <img src="../cone-screenshot.png" style="width: 100%"/>
+            </div>
+        </div>
+        <p>
+            There are surprisingly many entries in the category of "online 3D function plotter".
+            Most fill a particular niche, and after substantial development on Koval's 3D Grapher, It's hard for me to imagine any 3D grapher being the best in every category. 
+            Some plotters, such as the lovely <a href="https://harry7557558.github.io/spirulae/implicit3/">Spirulae</a>, are optimized for speed.
+            As might be expected, <a href="https://www.desmos.com/3d">Desmos 3D</a> offers a more polished, educational experience. 
+            Koval's 3D Grapher emphasizes accuracy and flexibility over speed. 
+            How do they all compare?
+        </p>
+        <h2>Dimensional Capabilities</h2>
+        <div style="display:flex; flex-direction: column; align-items: center;">
+            <table class="table-center">
+                <tr>
+                    <th>Name</th>
+                    <th>Implicit 0D</th>
+                    <th>Implicit 1D</th>
+                    <th>Implicit 2D</th>
+                    <th>Implicit 3D</th>
+                    <th>Parametric 1D</th>
+                    <th>Parametric 2D</th>
+                    <th>Parametric 3D</th>
+                </tr>
+                <tr>
+                    <td>Koval's 3D Grapher</td>
+                    <td>&#9989;</td>
+                    <td>&#9989;</td>
+                    <td>&#9989;</td>
+                    <td>&#10060;</td>
+                    <td>&#9989;</td>
+                    <td>&#9989;</td>
+                    <td>&#10060;</td>
+                </tr>
+                <tr>
+                    <td><a href="https://www.desmos.com/3d">Desmos 3D</a></td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#9989;</td>
+                    <td>&#9989;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                </tr>
+                <tr>
+                    <td><a href="https://www.geogebra.org/3d?lang=en">Geogebra 3D</a></td>
+                    <td>&#9989;</td>
+                    <td>&#9989;</td>
+                    <td>&#9989;</td>
+                    <td>&#10060;</td>
+                    <td>Limited</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                </tr>
+                <tr>
+                    <td><a href="https://harry7557558.github.io/spirulae/implicit3/">Spirulae</a></td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#9989;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#9989;</td>
+                    <td>&#10060;</td>
+                </tr>
+                <tr>
+                    <td><a href="https://www.math3d.org/">Math3d</a></td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>Limited</td>
+                    <td>&#10060;</td>
+                    <td>&#9989;</td>
+                    <td>&#9989;</td>
+                    <td>&#10060;</td>
+                </tr>
+                <tr>
+                    <td><a href="https://c3d.libretexts.org/CalcPlot3D/index.html">CalcPlot3D</a></td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#9989;</td>
+                    <td>Limited</td>
+                    <td>&#9989;</td>
+                    <td>&#9989;</td>
+                    <td>&#10060;</td>
+                </tr>
+                <tr>
+                    <td><a href="https://grapher.mathpix.com/">MathPix</a></td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>Limited</td>
+                    <td>&#10060;</td>
+                    <td>&#9989;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                </tr>
+                <tr>
+                    <td><a href="https://www.webdev20.pl/skins/default/js/demos/implicit-equation-3d-grapher/index.html">Design Concept</a></td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#9989;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                </tr>
+                <tr>
+                    <td><a href="https://christopherchudzicki.github.io/MathBox-Demos/parametric_surfaces_3D.html">MathBox Demos</a></td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#9989;</td>
+                    <td>&#9989;</td>
+                    <td>&#10060;</td>
+                </tr>
+                <tr>
+                    <td><a href="https://icefractal.com/graph3d/implicit.php">Ice Fractal</a></td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#9989;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                </tr>
+            </table>
+        </div>
+        <p>
+            Not every locus of a relation \(f(x,y,z)=0\) is a two-dimensional surface.
+            <ul>
+                <li>If a plotter was able to indicate that \(x^2+y^2+z^2=0\) resulted in a single point, it passed the "Implicit 0D" check.</li>
+                <li>If a plotter was able to indicate that \(x^2+y^2=0\) resulted in a line, it passed the "Implicit 1D" check.</li>
+                <li>Almost all plotters were able to identify 2D surfaces appropriately, as this is the standard output of a relation between three variables. Some plotters received a "limited" score, if they only supported functions of two variables (e.g., \(z=f(x,y)\)).</li>
+                <li>If a plotter was able to plot a parametric curve like \(f(t)=\begin{bmatrix}t\\t\\t \end{bmatrix}\), it passed the "Parametric 1D" check.</li>
+                <li>If a plotter was able to plot a parametric surface like \(f(s,t)=\begin{bmatrix}s\\t\\ 0\end{bmatrix}\), it passed the "Parametric 2D" check.</li>
+                <li>No plotter had capabilities for 3D parametric plotting, which would be the image of a unit cube under some function. This is understandable, since the 2D boundary of such a volume usually suffices.</li>
+            </ul>
+            Koval's 3D Grapher fares well here, by design.
+            Most plotters use a bisection method to find roots of a relation \(f(x,y,z)=0\): it knows there is a root between two points if there is a sign change in \(f\).
+            A function like \(f(x,y,z)=x^2+y^2\) is never negative, so such a method will always fail.
+            Koval's 3D Grapher uses interval arithmetic to check for a root within a volume.
+            This, of course, comes at the cost of speed, which we will look at later.
+            <div style="display:flex; flex-direction: column; align-items: center; margin-top: 15px">
+                <img src="../multi-dim-ex.png" style="max-width: 70%;"/>
+            </div>
+        </p>
+        <div style="display:flex; flex-direction: column; align-items: center;">
+            <h2>Plot Input</h2>
+            <table class="table-center">
+                <tr>
+                    <th>Name</th>
+                    <th>LaTeX</th>
+                    <th>LaTeX Preview</th>
+                    <th>Helper Functions</th>
+                    <th>Derivatives</th>
+                    <th>Complex Numbers</th>
+                    <th>Matrices</th>
+                    <th>Animation</th>
+                    <th>Zoom on Scroll</th>
+                </tr>
+                <tr>
+                    <td>Koval's 3D Grapher</td>
+                    <td>&#9989;</td>
+                    <td>N/A</td>
+                    <td>&#9989;</td>
+                    <td>&#9989;</td>
+                    <td>&#9989;</td>
+                    <td>&#9989;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                </tr>
+                <tr>
+                    <td><a href="https://www.desmos.com/3d">Desmos 3D</a></td>
+                    <td>&#9989;</td>
+                    <td>N/A</td>
+                    <td>&#9989;</td>
+                    <td>&#9989;</td>
+                    <td>&#9989;</td>
+                    <td>&#10060;</td>
+                    <td>&#9989;</td>
+                    <td>&#9989;</td>
+                </tr>
+                <tr>
+                    <td><a href="https://www.geogebra.org/3d?lang=en">Geogebra 3D</a></td>
+                    <td>&#9989;</td>
+                    <td>N/A</td>
+                    <td>&#9989;</td>
+                    <td>&#9989;</td>
+                    <td>&#10060;</td>
+                    <td>&#9989;</td>
+                    <td>&#9989;</td>
+                    <td>&#9989;</td>
+                </tr>
+                <tr>
+                    <td><a href="https://harry7557558.github.io/spirulae/implicit3/">Spirulae</a></td>
+                    <td>&#10060;</td>
+                    <td>&#9989;</td>
+                    <td>&#9989;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#9989;</td>
+                    <td>&#9989;</td>
+                </tr>
+                <tr>
+                    <td><a href="https://www.math3d.org/">Math3d</a></td>
+                    <td>&#9989;</td>
+                    <td>N/A</td>
+                    <td>&#9989;</td>
+                    <td>&#9989;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#9989;</td>
+                    <td>&#10060;</td>
+                </tr>
+                <tr>
+                    <td><a href="https://c3d.libretexts.org/CalcPlot3D/index.html">CalcPlot3D</a></td>
+                    <td>&#10060;</td>
+                    <td>&#9989;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                </tr>
+                <tr>
+                    <td><a href="https://grapher.mathpix.com/">MathPix</a></td>
+                    <td>&#9989;</td>
+                    <td>N/A</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                </tr>
+                <tr>
+                    <td><a href="https://www.webdev20.pl/skins/default/js/demos/implicit-equation-3d-grapher/index.html">Design Concept</a></td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                </tr>
+                <tr>
+                    <td><a href="https://christopherchudzicki.github.io/MathBox-Demos/parametric_surfaces_3D.html">MathBox Demos</a></td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                </tr>
+                <tr>
+                    <td><a href="https://icefractal.com/graph3d/implicit.php">Ice Fractal</a></td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                    <td>&#10060;</td>
+                </tr>
+            </table>
+            <p>
+                Here "Zoom on Scroll" indicates re-plotting at the new zoom level. 
+            </p>
+            <p>
+                Koval's 3D Grapher, Desmos 3D, and Geogebra 3D use custom parsers to transform LaTeX (or equivalent) into a evaluable format. 
+                Spirulae has a custom parser for plain text.
+                MathPix likely does their own parsing too, as they probably have one lying around from their other (corporate) projects.
+                Math3D uses some heuristics to transform LaTeX into something parsable by MathJS.
+            </p>
+            <p>
+                Koval's 3D Grapher transforms LaTeX into an internal format that can be (1) symbolically differentiated, and (2) easily transformed into javascript for evaluation in web workers.
+                This allows for low-hanging optimizations, like duplicate code removal and function inlining.
+                Since Koval's 3D Grapher supports functions with arbitrary arguments (e.g., other functions), this turns out to be more of an exercise in compilers than one might expect.
+                After experimenting with ANTLR4 for tokenizing and parsing, I settled on writing my own (operator precedence) parser for performance reasons.
+            </p>
+            <p>
+                Koval's 3D Grapher is not fast enough to support animation or re-plotting on zoom.
+                At some point, I would like to pass off plotting to the GPU, but there are significant precision and implementation issues.
+            </p>
+        </div>
+        <div style="display:flex; flex-direction: column; align-items: center;">
+            <h2>Implicit Plot Algorithm</h2>
+            <table>
+                <tr>
+                    <th>Name</th>
+                    <th>Precision</th>
+                    <th>Quality Settings</th>
+                    <th>\(z^2=0\)</th>
+                    <th>\(z=\lfloor x \rfloor\)</th>
+                    <th>\(z=|x|+|y|\)</th>
+                    <th>\(z=\sin(1/x)\)</th>
+                    <th>\(x^2+y^2=z^4(1-z)\)</th>
+                    <th>\((x^2+y^2)z=0\)</th>
+                </tr>
+            </table>
+            <h2>Parametric Plot Algorithm</h2>
+            <table>
+                <tr>
+                    <th>Name</th>
+                    <th>Screen-space \(uv\)</th>
+                </tr>
+            </table>
+            <h2>Graphics and Rendering</h2>
+            <table>
+                <tr>
+                    <th>Name</th>
+                    <th>Rasterized</th>
+                    <th>Ray-Marched</th>
+                    <th>Voxel</th>
+                    <th>Directional Lighting</th>
+                    <th>Transparency</th>
+                    <th>Coloring</th>
+                    <th>Axes Style</th>
+                    <th>Gradients</th>
+                </tr>
+            </table>
+        </div>
+	</div>
+</body>
+</html>
